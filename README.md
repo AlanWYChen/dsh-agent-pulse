@@ -1,94 +1,158 @@
+<p align="center"><img src="icon.svg" width="96" height="96" alt="Agent Activity Intelligence icon"></p>
+
+<div align="center">
+
 # Agent Activity Intelligence
 
-A native DSH right-sidebar feed for **what changed**, **observed verification**, and **sensitive-file access**. Routine reads and web searches stay quiet.
+**English** · [简体中文](README.zh-CN.md)
 
-## Open it
+**See what your agents changed—not a wall of tool calls.**
 
-After installation, refresh the existing DSH page. Open **What changed** from the conversation header or the right-sidebar guide. The panel includes the current session and observed local subagents; independent session forks are not grouped as subagents. Expand **Changes / 变更** and click a file to open a **right-sidebar Review tab**, not a modal. This opens the exact built-in **Review · turn N** used by DSH's **Edited N files** card, selecting the clicked file and retaining native syntax colors, split/inline layout, file picker, wrapping, and editor menu. If that recorded native Review is unavailable, an explicit error is shown; new clicks never substitute a custom **filename · Diff** tab. Previously opened custom tabs remain readable only for backwards compatibility. Working cards show a whale tail, **Agent is still working**, and animated dots. **Debug details / 调试详情** remains off by default; enabling it reveals the optional collapsed technical trace. The model's grounding evidence is available regardless of this display toggle.
+A native [DeepSeek Harness (DSH)](https://github.com/deepseek-ai/deepseek-harness) sidebar for meaningful outcomes, observed test results, and sensitive-file access. Routine reads and web searches stay quiet.
 
-## Behavior
+[Highlights](#highlights) · [Prepare DSH](#prepare-dsh) · [Install](#install) · [All features](#all-features) · [Privacy](#privacy-and-limits) · [Development](#development)
 
-- Successful direct `read`/`read_image` calls against `.env` variants, SSH configuration/key files, credentials, and common secret-file extensions produce sensitive-access cards. Denied and failed attempts are distinct. Template/example `.env` files are excluded.
-- Successful direct `edit`/`write` calls group into an evolving card per agent turn. Failed modifications generate attention cards rather than change claims.
-- Recorded DSH workspace comparisons add shell-originated changes where available, without pretending they prove which concurrent agent caused them. Comparisons are process-local DSH evidence; the plugin caches their sanitized metadata, not their contents.
-- Supported foreground test commands use numeric Node TAP/spec, pytest, Vitest, and Jest summaries. Successful exit alone never supplies a pass count. Selected tests are labeled partial when their scope cannot be mapped to every changed file. Later modifications stale earlier verification.
-- Outcome interpretation runs once at a turn checkpoint, not after each edit. The model receives bounded, redacted before/after edits or recorded workspace hunks, the nearest available user request, and a clearly unverified agent report. It describes **what behavior changed and why it matters**, rather than listing file operations. Both the headline and description must be useful, and supporting change IDs must refer to actual supplied changes. Insufficient context is shown honestly; a title-only result no longer replaces a missing description. AI summaries have a subtle source badge, not repeated `Inferred:` prefixes. Counts and verification remain deterministic evidence.
-- Model failure, rejected output, or missing model selection leaves factual cards available. No model is needed for sensitive-access detection.
+</div>
 
-## Privacy and trust boundary
+## Highlights
 
-The persisted projection/cache contains filenames, file IDs, operation metadata, verification labels, event references, validated narrative, and **bounded, redacted whole-file versions for the diff viewer**. Whole-file versions are captured only from successful canonical edit/write results already authorized by DSH—not by extra filesystem reads. Sensitive paths are excluded. Capture limits: 200,000 characters and 5,000 lines per side, 100 records and 10 million characters total. These browser snapshots remain local and are not automatically sent whole to the model. Fallback syntax highlighting runs locally after redaction and returns text tokens, never HTML; old/new streams are highlighted separately with light/dark palettes. Highlighting is bounded to 5,000 rows, 200,000 characters, 50,000 tokens, and 10,000 characters per source line, with a per-line tokenizer time limit. Unsupported languages or grammar failures stay readable as plain text.
+| What you want to know              | What the plugin shows                                                                                 |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| **What changed?**                  | Evolving cards per agent turn, with optional AI explanations of behavior changes and why they matter. |
+| **Was it tested?**                 | Observed test counts and verification gaps—not a pass claim based only on a successful exit.          |
+| **Did it access sensitive files?** | Distinct cards for successful, denied, or failed direct access to recognized sensitive paths.         |
+| **What are my subagents doing?**   | The current session and observed local subagents in one feed, with a live working indicator.          |
+| **Can I inspect the changes?**     | Click a changed file to open DSH's native **Review · turn N** in the right sidebar.                   |
+| **Can I control summary costs?**   | Choose a summary model, follow each agent's model, or turn AI summaries off and keep factual cards.   |
 
-Unlike the initial metadata-only version, **summary requests now include redacted excerpts of non-sensitive code changes and bounded task/report text**. Excerpts are held in a bounded in-memory cache and sent to your selected summary provider. Raw assistant messages, commands, and complete shell output are not duplicated into plugin storage. Disable model summaries if code excerpts must not leave the machine.
+## Prepare DSH
 
-Content for `.env` files (including examples), SSH/cloud credential directories, private keys, and other sensitive paths is excluded from model input and plugin-generated previews. Common credential assignments, provider tokens, PEM blocks, authenticated URLs, and opaque high-entropy values are redacted. Secret detection is best-effort, not a guarantee; do not assume an arbitrary source file cannot contain an unrecognized secret. Limits: at most 12 files, about 2,000 characters per file, 20,000 serialized model-context characters total, and a bounded 1,500-event tail for task/report recovery.
+- Use **DSH `0.2.1-rc.2` or newer**, as declared by this plugin's package metadata. This is a minimum requirement, not a claim that every later release has been tested.
+- Install or run DSH using the [official instructions](https://github.com/deepseek-ai/deepseek-harness#run). The visible sidebar requires the DSH Web GUI.
+- For optional AI summaries, configure a model provider in DSH. **Factual activity cards and sensitive-access detection do not require a summary model.**
+- For the source installation below, have Git, Node.js, and npm available; use a Node.js version supported by your DSH release.
 
-Native Review navigation requires an exact same-session/turn/path match. It is the existing DSH viewer—not a plugin-generated sanitized preview—and follows DSH's normal file-access and display behavior, including its file picker and potentially unredacted source. The plugin does not inspect unrelated picker files or substitute another viewer based on their contents. Clicking Review does not send additional code to the summary model. Summary-provider excerpts and plugin-owned previews remain redacted. Native editor actions and opening the current file are deliberate user actions governed by DSH's native path and desktop checks.
+## Install
 
-The summarizer has no tools. All task text, agent reports, filenames, comments, and code are treated as untrusted evidence rather than instructions. Accepted text is bounded, filtered, and tied to supplied change IDs; execution verification is not supplied by the model. This reduces but cannot eliminate hallucinations. The AI source badge is not proof that a feature works.
+This repository is currently a **private, local DSH bundle**, not a published npm package.
 
-Only authenticated profile-owner RPC callers can read the aggregated feed. The plugin cannot approve tools, weaken permissions, or change project files. Installation affects the current DSH profile, not just one session.
+### 1. Get the source
 
-## Limits
+```sh
+git clone https://github.com/AlanWYChen/dsh-agent-pulse.git
+cd dsh-agent-pulse
+npm ci --ignore-scripts
+pwd
+```
 
-This is an activity feed, **not an OS security audit or enforcement system**. Direct DSH file tools and recognized test commands are covered. Shell-based reads (for example `cat .env`), MCP operations, nested PTC dispatches, remote agents, terminal sessions, and external processes do not have complete semantic coverage in this version. Do not interpret an empty feed as proof that no sensitive access occurred.
+Copy the absolute directory printed by `pwd`.
 
-Composite shell commands, pipes, redirects, watch-mode tests, background jobs, unrecognized runners, and truncated output cannot establish a successful foreground verification. Real DSH foreground rendering emits an exit-code marker only for nonzero exits; a numeric supported summary with no failure, stop, timeout, background, or truncation markers is treated as the renderer's successful completion case.
+### 2. Install the bundle in your DSH profile
 
-Observed test results describe commands that ran; they do not guarantee exhaustive coverage or correctness. Workspace changes under concurrent agents have uncertain attribution. Net-zero edits and formatter-only changes can still produce a direct-tool modification card. Changed-file links use workspace-relative labels to distinguish duplicate basenames. New direct edit/write operations capture complete before/after file versions for a full-file unified viewer. Historical full line context can sometimes be reconstructed from complete logged reads/writes plus exact successful edits, with normalized-newline and concurrent-change caveats. Logged edit blocks and native workspace hunks are clearly labeled partial when complete versions are missing; writes may show a whole after-file without claiming an unknown before-file. Missing/disposed history is explicitly unavailable rather than comparing against current disk contents.
+In the DSH instance you actually use, ask its agent:
 
-Aggregation covers sessions observed by this plugin (up to 200 cached session snapshots), not an exhaustive historical scan. Up to 100 cards per session and 500 summary records are retained by default. Unopened historical sessions may not have a feed until DSH loads/replays them. Cached child cards are labeled historical. Disabling/uninstalling removes runtime contributions; plugin-owned cached metadata may remain in DSH domain storage.
+```text
+Install the local DSH plugin bundle at /absolute/path/to/dsh-agent-pulse
+using plugin_manager → install_bundle.
+```
+
+Replace the example path with your checkout's absolute path. Installation applies to the **current DSH profile**, not just the conversation. Keep the source directory available for this local installation.
+
+### 3. Open the feed
+
+1. Follow DSH's restart prompt if one is shown, then refresh the existing DSH page.
+2. Open **What changed** from the conversation header or right-sidebar guide.
+3. Use **Summary model** at the top to choose a model or **Off** for factual cards only. Following the chat model can be expensive.
+4. Expand **Changes** and click a file to inspect its recorded native Review.
+
+Host-side JavaScript updates may require restarting the existing DSH runtime; refreshing the browser alone does not reload Host modules. Do not start a second Web server to update your existing GUI.
+
+## All features
+
+### Activity and outcomes
+
+| Feature                           | Behavior                                                                                                                                                         |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Turn-based change cards**       | Successful direct `edit` / `write` calls are grouped into an evolving card per agent turn. Failed modifications get attention cards, not change claims.          |
+| **Workspace comparison evidence** | Adds shell-originated changes when DSH has recorded a comparison. Concurrent-agent attribution remains explicitly uncertain.                                     |
+| **Behavior summaries**            | At a turn checkpoint, the selected model receives bounded, redacted change excerpts plus task context. It explains outcomes rather than listing file operations. |
+| **Grounded narratives**           | Accepted summaries must refer to supplied change IDs. AI text has a source badge; counts and verification remain deterministic evidence.                         |
+| **Graceful fallback**             | Missing models, rejected output, or provider failures leave factual cards available.                                                                             |
+| **Local subagent aggregation**    | Includes observed local subagents; independent session forks are not grouped as subagents. Cached child cards are labeled historical.                            |
+| **Live working state**            | Whale-tail indicator, animated dots, and reduced-motion support while the agent works.                                                                           |
+| **Optional debug details**        | Off by default. Exposes a collapsed technical trace without changing what evidence the summary model receives.                                                   |
+
+### Verification and sensitive access
+
+| Feature                            | Behavior                                                                                                                                                                                                  |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Recognized test summaries**      | Numeric Node TAP/spec, pytest, Vitest, and Jest summaries from supported foreground commands. A zero exit code alone never supplies a pass count.                                                         |
+| **Partial and stale verification** | Selected tests are labeled partial when their scope cannot cover all changed files. Later modifications stale earlier verification.                                                                       |
+| **Sensitive-file alerts**          | Direct `read` / `read_image` access to recognized `.env` variants, SSH configuration/keys, credentials, and common secret-file extensions. Template/example `.env` files are excluded from access alerts. |
+| **Distinct access outcomes**       | Successful access, denied attempts, and failed attempts are shown separately.                                                                                                                             |
+| **Custom path rules**              | Add case-insensitive sensitive-path regular expressions and exclusions through plugin configuration.                                                                                                      |
+
+### Review and summary controls
+
+| Feature                            | Behavior                                                                                                                                                                                      |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Native Review navigation**       | Opens the exact same-session/turn/path **Review · turn N** used by DSH's **Edited N files** card, selecting the clicked file.                                                                 |
+| **Native editor experience**       | Keeps syntax colors, split/inline layout, file picker, wrapping, and editor menu. Missing native Review evidence produces an explicit error, not a substitute custom diff.                    |
+| **Recorded-content compatibility** | Previously opened custom diff tabs remain readable. Bounded, redacted recorded snapshots and validated history support these legacy previews without comparing against today's disk contents. |
+| **Summary-model selection**        | Live provider-grouped model list, **Follow chat model**, or **Off**. Saved profile-wide without changing the conversation model.                                                              |
+| **Explicit regeneration**          | **Generate summary / Refresh summary** regenerates one outcome with the selected model and consumes provider usage. Changing models does not regenerate old cards.                            |
+| **Agent tools**                    | `activity_summary_model` reads/lists/sets the summary policy. `activity_outcomes` returns bounded outcomes without raw code and can explicitly regenerate one card.                           |
 
 ## Configuration
 
-The bundle installs row `agent-activity-intelligence`. Use DSH's plugin configuration/profile patch facilities rather than modifying the installed package.
+The bundle installs plugin row `agent-activity-intelligence`. Use DSH's plugin configuration/profile patch facilities rather than editing the installed package.
 
-| Option              | Default | Meaning                                                        |
-| ------------------- | ------- | -------------------------------------------------------------- |
-| `summaries`         | `true`  | Enable batched model interpretations; may incur provider usage |
-| `summaryProvider`   | omitted | Use the originating session's model provider                   |
-| `summaryModel`      | omitted | Use the originating session's model                            |
-| `maxCards`          | `100`   | Projection card limit, 10–500                                  |
-| `summaryTimeoutMs`  | `45000` | Summary request cancellation deadline                          |
-| `sensitivePatterns` | `[]`    | Additional case-insensitive path regular expressions           |
-| `excludedPatterns`  | `[]`    | Path exclusions, evaluated before sensitive rules              |
+| Option              | Default | Meaning                                                                                                                                         |
+| ------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `summaries`         | `true`  | Enable model interpretations; requests may incur provider usage.                                                                                |
+| `summaryProvider`   | omitted | Initially follow the originating session's provider. Set together with `summaryModel`.                                                          |
+| `summaryModel`      | omitted | Initially follow the originating session's model. Set together with `summaryProvider`.                                                          |
+| `maxCards`          | `100`   | Cards per session, from 10 to 500.                                                                                                              |
+| `summaryTimeoutMs`  | `45000` | Summary cancellation deadline in milliseconds, from 1,000 to 120,000.                                                                           |
+| `sensitivePatterns` | `[]`    | Additional case-insensitive path regular expressions.                                                                                           |
+| `excludedPatterns`  | `[]`    | Suppress matching access alerts and exclude matching content from model/plugin previews; cannot override built-in sensitive-content exclusions. |
 
-### Summary-model dropdown
+Summaries default to enabled and follow each originating agent's model, so provider usage can occur without selecting a separate model. The acknowledged dropdown choice takes precedence over the initial provider/model defaults and survives restarts; `summaries: false` remains an overriding disable. An unavailable explicit model never silently falls back to a larger chat model.
 
-Open **What changed / 变更与关注** and use **Summary model / 摘要模型** at the top. The dropdown lists models from the live configured providers, grouped by provider. Choose a small model for low-cost interpretations, **Follow chat model** to explicitly use each working agent's model (potentially expensive), or **Off** for factual cards only.
+There is one concurrent summary request, a bounded queue, and no automatic retries for unchanged failed evidence during the same runtime. Low reasoning effort is preferred when supported; the working agent's maximum effort is not inherited. Each path-rule list accepts up to 30 patterns of 200 characters each; invalid regular expressions do not match.
 
-The acknowledged choice is saved profile-wide across restarts, without changing any chat's model. UI saves take precedence over the `summaryProvider`/`summaryModel` initial defaults. An unavailable explicit model never silently falls back to a larger chat model. Changes cancel queued/active old-model work where supported and apply to future summaries; existing cards are not regenerated. The plugin prefers a supported none/minimal/low reasoning effort and never inherits the working agent's max effort. When none of those efforts is offered, the selected model uses its adapter default.
+## Privacy and limits
 
-Agents can use `activity_summary_model` with `action: get`, `list`, or `set` to perform the same operations. A model selection requires `mode: model` plus provider/model IDs from `list`; `mode: follow` and `mode: off` require neither. The tool performs no inference requests itself.
+- **AI summaries send code excerpts to your selected provider.** Inputs are bounded and redacted, not metadata-only. Choose **Off** if those excerpts must not leave your machine.
+- Plugin storage includes sanitized metadata, validated narratives, and bounded, redacted whole-file snapshots captured from successful authorized edit/write results. Sensitive paths are excluded; no extra filesystem reads are made for snapshot capture.
+- Secret filtering is **best-effort**, not a guarantee. Native Review is DSH's own viewer and may show unredacted source under DSH's normal access rules.
+- This is an **activity feed, not a security audit or enforcement system**. Shell reads, MCP operations, nested PTC dispatches, remote agents, external processes, and background tests do not have complete semantic coverage. An empty feed is not proof that no sensitive access occurred.
+- Test results describe observed commands, not exhaustive coverage or correctness. Historical sessions must be loaded/observed; the feed is not an exhaustive history scan.
+- The plugin cannot approve tools, weaken permissions, or modify project files. Aggregated-feed RPC access is restricted to authenticated profile-owner callers.
 
-Set provider and model together when overriding the initial summary route. There is one concurrent summary request, a bounded queue, and no automatic retries for unchanged failed evidence. Summary records are keyed by evidence fingerprint and summarizer version. The behavior-summary upgrade invalidates the old metadata-only narratives and backfills only the newest completed outcome per loaded session, not the entire history. Use a card's **Generate summary / Refresh summary** button to explicitly regenerate an older outcome with the selected model (consumes provider usage); this avoids expensive bulk history reprocessing. Agents can read bounded summaries using `activity_outcomes` (current session by default), optionally waiting for pending summaries or passing `regenerateCardId` for the same explicit operation. This returns no raw code.
+Turning summaries off does not stop local evidence collection or caching. Clicking native Review does not send additional code to the summary model. Main controls are bilingual; some deterministic evidence labels and fallback narratives remain English.
+
+See [Privacy and evidence boundaries](docs/PRIVACY.md) for redaction, retention, capture limits, and verification caveats.
+
+## Update and uninstall
+
+For a local update, pull the source, run `npm ci --ignore-scripts`, and use DSH's bundle installation/update facilities for the same absolute directory. Restart the existing runtime when required, then refresh its page.
+
+Disable or uninstall the plugin through DSH's plugin management for the profile where it was installed. Runtime contributions are removed, but plugin-owned cached data may remain in DSH domain storage.
 
 ## Development
 
 ```sh
-npm install --ignore-scripts
+npm ci --ignore-scripts
 npm test
 npm run check
 npm run format:check
 ```
 
-Run `npm run format` to apply Prettier across source, tests, documentation, and
-configuration files. Formatting uses single quotes in JavaScript and Prettier's
-other defaults. Dependencies, caches, build output, and the npm-managed lockfile
-are excluded.
+Use `npm run format` to apply the repository's Prettier rules. See [Development guide](docs/DEVELOPMENT.md) for the implementation map and local reload notes.
 
-Install the absolute workspace directory with DSH `plugin_manager` → `install_bundle`. Do not start a second Web server. Updated installed JavaScript generations may require restarting the existing DSH runtime; refreshing alone does not reload Host modules.
+GitHub Actions runs unit/integration tests on Linux, macOS, and Windows with Node.js 22/24, clean-package installation checks, and public-contract smoke tests against minimum/latest DSH. See [CI checks](docs/CI.md) for the exact checks, limitations, and local commands.
 
-## Implementation map
+## License
 
-- [engine.js](engine.js): pure replayable evidence projection and claim filtering.
-- [workspace.js](workspace.js): conservative recorded-comparison enrichment.
-- [coordinator.js](coordinator.js): bounded summary queue, narrative cache, and event-driven watches.
-- [change-context.js](change-context.js): redacted model excerpts and browser evidence.
-- [recorded-files.js](recorded-files.js): bounded whole-file capture from successful canonical tool results.
-- [full-file-context.js](full-file-context.js): validated historical line reconstruction, without disk reads.
-- [unified-diff.js](unified-diff.js): bounded line comparison with unchanged context retained.
-- [index.js](index.js): Host registration, domain storage, owner-only RPC.
-- [client.js](client.js): native Review navigation, recorded-content sidebar fallback, model selection, and optional debug details.
-
-The plugin icon is original artwork. Working cards use a wiggling whale-tail outline adapted from the MIT-licensed DSH chat indicator, with animated dots and reduced-motion support; see [third-party notices](THIRD-PARTY-NOTICES.md). No duplicate React runtime is included.
+[MIT](LICENSE). The plugin icon is original artwork. The working-state whale tail is adapted from DSH; its existing attribution is preserved in [Third-party notices](THIRD-PARTY-NOTICES.md).

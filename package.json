@@ -2,6 +2,7 @@
   "name": "@local/dsh-agent-activity-intelligence",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "engines": {
     "dsh": ">=0.2.1-rc.2"
   },
@@ -29,12 +30,18 @@
     "locale/*.json",
     "icon.svg",
     "README.md",
+    "README.zh-CN.md",
+    "docs/",
     "THIRD-PARTY-NOTICES.md"
   ],
   "scripts": {
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "node --test *.test.js",
+    "test": "node scripts/run-tests.mjs all",
+    "test:unit": "node scripts/run-tests.mjs unit",
+    "test:integration": "node scripts/run-tests.mjs integration",
+    "test:package": "node scripts/check-package.mjs",
+    "test:compatibility": "node scripts/check-dsh-compatibility.mjs",
     "check": "node --check index.js && node --check engine.js && node --check coordinator.js && node --check change-context.js && node --check syntax-highlight.js && node --check unified-diff.js && node --check full-file-context.js && node --check recorded-files.js && node --check model-settings.js && node --check workspace.js && node --check client.js"
   },
   "dependencies": {

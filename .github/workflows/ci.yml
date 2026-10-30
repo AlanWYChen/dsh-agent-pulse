@@ -1,0 +1,115 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 8 * * 1'
+  workflow_call:
+    inputs:
+      ref:
+        description: Exact release ref to validate
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Syntax and formatting
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run check
+      - run: npm run format:check
+      - name: Check automation syntax
+        run: |
+          for script in scripts/*.mjs; do node --check "$script"; done
+      - name: Lint GitHub Actions workflows
+        uses: docker://rhysd/actionlint:1.7.7
+        with:
+          args: -color
+
+  tests:
+    name: Tests (${{ matrix.os }}, Node ${{ matrix.node }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node: [22, 24]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Unit, privacy, and regression tests
+        run: npm run test:unit
+      - name: Host/client integration tests (test doubles)
+        run: npm run test:integration
+
+  package:
+    name: Clean package installation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Pack, inspect contents, and import in a clean consumer
+        run: npm run test:package -- "$RUNNER_TEMP/candidate"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: npm-candidate
+          path: ${{ runner.temp }}/candidate/*.tgz
+          if-no-files-found: error
+          retention-days: 7
+
+  compatibility:
+    name: DSH public-contract smoke (${{ matrix.dsh }})
+    strategy:
+      fail-fast: false
+      matrix:
+        dsh: ['0.2.1-rc.2', latest]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Install official DSH in an isolated directory
+        env:
+          DSH_VERSION: ${{ matrix.dsh }}
+        run: npm install --prefix "$RUNNER_TEMP/dsh-host" --no-audit --no-fund "@deepseek-ai/dsh@$DSH_VERSION"
+      - name: Check actual host contracts without a server or model
+        run: npm run test:compatibility -- "$RUNNER_TEMP/dsh-host"
