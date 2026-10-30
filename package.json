@@ -1,0 +1,68 @@
+{
+  "name": "@local/dsh-agent-activity-intelligence",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "dsh": ">=0.2.1-rc.2"
+  },
+  "type": "module",
+  "description": "Evidence-backed agent outcomes, verification gaps, and sensitive-access alerts in the DSH sidebar.",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "engine.js",
+    "coordinator.js",
+    "change-context.js",
+    "syntax-highlight.js",
+    "unified-diff.js",
+    "full-file-context.js",
+    "recorded-files.js",
+    "model-settings.js",
+    "workspace.js",
+    "client.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "README.md",
+    "THIRD-PARTY-NOTICES.md"
+  ],
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "node --test *.test.js",
+    "check": "node --check index.js && node --check engine.js && node --check coordinator.js && node --check change-context.js && node --check syntax-highlight.js && node --check unified-diff.js && node --check full-file-context.js && node --check recorded-files.js && node --check model-settings.js && node --check workspace.js && node --check client.js"
+  },
+  "dependencies": {
+    "@shikijs/core": "^4.5.0",
+    "@shikijs/engine-javascript": "^4.5.0",
+    "@shikijs/langs": "^4.5.0",
+    "@shikijs/themes": "^4.5.0",
+    "zod": "^4.1.0"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-client-ui-sidebar-right",
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-sidebar-documentpreview",
+        "@deepseek-ai/dsh-client-ui-deliverables",
+        "@deepseek-ai/dsh-client-ui-open-in-app",
+        "@deepseek-ai/dsh-client-locale"
+      ]
+    }
+  },
+  "devDependencies": {
+    "prettier": "3.9.10"
+  }
+}

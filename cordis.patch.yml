@@ -1,0 +1,7 @@
+- insert:
+    - id: agent-activity-intelligence
+      name: '@local/dsh-agent-activity-intelligence'
+      config:
+        summaries: true
+        maxCards: 100
+        summaryTimeoutMs: 45000
