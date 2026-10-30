@@ -3,7 +3,7 @@ import vm from 'node:vm';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-function setup(rpc = () => new Promise(() => {})) {
+function setup(rpc = () => new Promise(() => {}), locale) {
   let definition;
   const effects = [],
     registrations = [],
@@ -87,6 +87,9 @@ function setup(rpc = () => new Promise(() => {})) {
   );
 
   const plugin = definition.factory((name) => {
+    if (name === '@deepseek-ai/dsh-client-ui-primitives') {
+      return { TextShimmer: 'DeepSeekTextShimmer' };
+    }
     assert.equal(name, 'react');
 
     return React;
@@ -109,7 +112,7 @@ function setup(rpc = () => new Promise(() => {})) {
         return () => {};
       },
 
-      bind: () => (key) => key,
+      bind: () => (key) => dictionaries[locale]?.[key] || key,
     },
     sidebarRightTabs: {
       register: (value) => {
@@ -173,13 +176,25 @@ function setup(rpc = () => new Promise(() => {})) {
       ...overrides,
     });
 
+  const settings = registrations.find(
+    (row) =>
+      row.options.name === 'settings.section' &&
+      row.options.id === '@local/dsh-agent-activity-intelligence',
+  );
+  const renderSettings = (overrides = {}) =>
+    settings.Component({
+      ...settings.options.inject(),
+      t: ctx.locale.bind(),
+      ...overrides,
+    });
+
   let picker;
 
   const renderPicker = (overrides = {}) => {
-    // Panel children are rendered separately, just as React gives each component its own hooks.
+    // Settings children are rendered separately, just as React gives each component its own hooks.
     if (!picker) {
       picker = visit(
-        render(),
+        renderSettings(),
         (node) => typeof node.type === 'function' && node.props.modelRpc,
       )[0];
       states.length = 0;
@@ -248,6 +263,7 @@ function setup(rpc = () => new Promise(() => {})) {
     stateWrites,
     render,
     renderPanel,
+    renderSettings,
     renderPicker,
     mountCard,
     mountDiff: (tab, overrides = {}) => {
@@ -344,7 +360,7 @@ const diffValue = (overrides = {}) => ({
   },
 });
 
-test('working cards show the chat whale tail, visible status text and three animated dots', () => {
+test('working cards use DeepSeek TextShimmer for status text and ellipsis beside the whale tail', () => {
   const s = setup();
   const mounted = s.mountCard(
     diffCard({
@@ -369,7 +385,7 @@ test('working cards show the chat whale tail, visible status text and three anim
   assert.equal(
     visit(indicator, (node) => node.props.className === 'aai-working-dot')
       .length,
-    3,
+    0,
   );
   assert.equal(
     text(visit(tree, (node) => node.type === 'h3')),
@@ -379,8 +395,15 @@ test('working cards show the chat whale tail, visible status text and three anim
     text(
       visit(indicator, (node) => node.props.className === 'aai-working-label'),
     ),
-    'agentWorking',
+    'agentWorking...',
   );
+  const shimmer = visit(
+    indicator,
+    (node) => node.type === 'DeepSeekTextShimmer',
+  );
+  assert.equal(shimmer.length, 1);
+  assert.equal(shimmer[0].props.active, true);
+  assert.equal(shimmer[0].props.className, 'aai-working-label');
   assert.equal(
     visit(indicator, (node) => node.type === 'svg')[0].props['aria-hidden'],
     true,
@@ -403,14 +426,14 @@ test('working cards show the chat whale tail, visible status text and three anim
   );
 });
 
-test('whale and dots respect reduced motion and keep localized accessible status labels', () => {
+test('tail respects reduced motion and native shimmer replaces custom dot CSS', () => {
   const s = setup();
   const style = text(visit(s.renderPanel(), (node) => node.type === 'style'));
 
   assert.match(style, /@keyframes aai-tail-wiggle/);
-  assert.match(style, /@keyframes aai-dot-pulse/);
+  assert.doesNotMatch(style, /aai-dot-pulse|aai-working-dot/);
   assert.match(style, /@media\(prefers-reduced-motion:reduce\)/);
-  assert.match(style, /\.aai-whale-tail,\.aai-working-dot\{animation:none\}/);
+  assert.match(style, /\.aai-whale-tail\{animation:none\}/);
   assert.equal(s.dictionaries.en.agentWorking, 'Agent is still working');
   assert.equal(s.dictionaries.zh.agentWorking, '智能体正在工作');
 });
@@ -1186,7 +1209,7 @@ test('summary requests abort on card change and unmount and ignore late response
   await next;
 });
 
-test('model RPC is injected by a callable factory alongside unchanged watch', async () => {
+test('Settings receives model RPC while Panel retains watch and diff without a model picker', async () => {
   const s = setup(() => Promise.resolve({ ok: true, value: modelValue() }));
   const body = s.registrations.find(
     (row) =>
@@ -1199,13 +1222,33 @@ test('model RPC is injected by a callable factory alongside unchanged watch', as
   const props = body.options.inject();
 
   assert.equal(typeof props.watch, 'function');
-  assert.equal(typeof props.modelRpc, 'function');
+  assert.equal(props.modelRpc, undefined);
   assert.equal(typeof props.diffRpc, 'function');
+  assert.equal(
+    visit(
+      s.renderPanel(),
+      (node) => typeof node.type === 'function' && node.props.modelRpc,
+    ).length,
+    0,
+  );
+
+  const settings = s.registrations.find(
+    (row) => row.options.name === 'settings.section',
+  );
+  assert.equal(typeof settings.options.inject, 'function');
+  const settingsProps = settings.options.inject();
+  assert.equal(typeof settingsProps.modelRpc, 'function');
+  const picker = visit(
+    s.renderSettings(),
+    (node) => typeof node.type === 'function' && node.props.modelRpc,
+  )[0];
+  assert.equal(picker.props.modelRpc, settingsProps.modelRpc);
+  assert.equal(picker.props.visible, true);
 
   const controller = new AbortController();
 
   for (const action of ['get', 'list', 'set'])
-    await props.modelRpc({ action }, controller.signal);
+    await settingsProps.modelRpc({ action }, controller.signal);
 
   assert.deepEqual(
     s.calls.map((call) => [
@@ -1220,6 +1263,84 @@ test('model RPC is injected by a callable factory alongside unchanged watch', as
       action,
       true,
     ]),
+  );
+});
+
+test('native Settings navigation label is localized and Panel has no model or effort controls', () => {
+  for (const [locale, label, navLabel] of [
+    ['en', 'Activity summaries', 'Summaries'],
+    ['zh', '动态摘要', '摘要'],
+  ]) {
+    const s = setup(undefined, locale);
+    const settings = s.registrations.find(
+      (row) => row.options.name === 'settings.section',
+    );
+    assert.equal(settings.options.id, '@local/dsh-agent-activity-intelligence');
+    assert.equal(settings.options.locale, 'agentActivityIntelligence');
+    assert.equal(typeof settings.options.label, 'function');
+    assert.equal(settings.options.label(), navLabel);
+    const tree = s.renderSettings();
+    assert.equal(tree.props['aria-label'], label);
+    assert.equal(text(visit(tree, (node) => node.type === 'h2')[0]), label);
+
+    const panel = s.renderPanel({
+      t: (key) => s.dictionaries[locale][key] || key,
+    });
+    assert.equal(
+      visit(
+        panel,
+        (node) =>
+          node.type === 'select' ||
+          (typeof node.type === 'function' && node.type.name === 'ModelPicker'),
+      ).length,
+      0,
+    );
+    assert.doesNotMatch(
+      text(panel),
+      /summaryModel|effort|Summary model|Effort|摘要模型|推理强度/,
+    );
+    assert.equal(s.calls.length, 0);
+  }
+});
+
+test('summary Settings uses a scoped card layout, aligned controls and responsive rows', () => {
+  const s = setup();
+  const tree = s.renderSettings();
+  const card = visit(
+    tree,
+    (node) => node.props.className === 'aai-settings-card',
+  )[0];
+  assert.ok(card);
+  assert.equal(
+    text(visit(card, (node) => node.type === 'h3')[0]),
+    'summaryGeneration',
+  );
+  const style = text(visit(tree, (node) => node.type === 'style')[0]);
+  assert.match(
+    style,
+    /grid-template-columns:minmax\(0,1fr\) minmax\(180px,270px\)/,
+  );
+  assert.match(style, /@media\(max-width:640px\)/);
+  assert.match(style, /:focus-visible/);
+  assert.doesNotMatch(style, /\.aai-root|\.aai-header/);
+  const picker = s.renderPicker();
+  const row = visit(
+    picker,
+    (node) => node.props.className === 'aai-setting-row',
+  )[0];
+  assert.equal(row.type, 'label');
+  assert.equal(
+    visit(row, (node) => node.props.className === 'aai-setting-copy').length,
+    1,
+  );
+  assert.equal(
+    visit(row, (node) => node.props.className === 'aai-setting-description')
+      .length,
+    1,
+  );
+  assert.equal(
+    visit(row, (node) => node.type === 'select')[0].props['aria-label'],
+    'summaryModel',
   );
 });
 
@@ -1309,6 +1430,248 @@ test('model selection saves once immediately and preserves catalog with omitted 
       node.children.includes('modelSaved'),
     ),
   );
+});
+
+test('summary effort picker offers only capability choices plus auto and model default', async () => {
+  const s = setup(() =>
+    Promise.resolve({
+      ok: true,
+      value: {
+        ...modelValue({
+          mode: 'model',
+          provider: 'configured',
+          model: 'small',
+        }),
+        providers: catalog,
+        reasoning: {
+          efforts: [
+            { id: 'minimal', name: 'Minimal reasoning' },
+            { id: 'high' },
+          ],
+        },
+      },
+    }),
+  );
+  s.renderPicker();
+  const cleanup = s.effects[0]();
+  await flush();
+
+  const effort = visit(
+    s.renderPicker(),
+    (node) => node.type === 'select' && node.props['aria-label'] === 'effort',
+  )[0];
+
+  assert.equal(effort.props.disabled, false);
+  assert.equal(effort.props.value, JSON.stringify({ effortPolicy: 'auto' }));
+  assert.deepEqual(
+    visit(effort, (node) => node.type === 'option').map((node) => ({
+      value: JSON.parse(node.props.value),
+      label: text(node),
+    })),
+    [
+      { value: { effortPolicy: 'auto' }, label: 'effortAuto' },
+      { value: { effortPolicy: 'default' }, label: 'effortDefault' },
+      { value: { reasoningEffort: 'minimal' }, label: 'Minimal reasoning' },
+      { value: { reasoningEffort: 'high' }, label: 'high' },
+    ],
+  );
+  cleanup();
+});
+
+test('summary effort picker saves explicit effort without the previous policy', async () => {
+  const selection = {
+    mode: 'model',
+    provider: 'configured',
+    model: 'small',
+    effortPolicy: 'default',
+  };
+  const reasoning = { efforts: [{ id: 'high', name: 'High' }] };
+  let finish;
+  const s = setup((_path, _method, payload) =>
+    payload.action === 'set'
+      ? new Promise((resolve) => {
+          finish = resolve;
+        })
+      : Promise.resolve({
+          ok: true,
+          value: { ...modelValue(selection), providers: catalog, reasoning },
+        }),
+  );
+  s.renderPicker();
+  const cleanup = s.effects[0]();
+  await flush();
+
+  const effortSelect = (tree) =>
+    visit(
+      tree,
+      (node) => node.type === 'select' && node.props['aria-label'] === 'effort',
+    )[0];
+  const effort = effortSelect(s.renderPicker());
+  assert.equal(effort.props.value, JSON.stringify({ effortPolicy: 'default' }));
+  const event = {
+    target: { value: JSON.stringify({ reasoningEffort: 'high' }) },
+  };
+  const saving = effort.props.onChange(event);
+  await effort.props.onChange(event);
+
+  assert.equal(
+    s.calls.length,
+    3,
+    'duplicate changes must not save while pending',
+  );
+  assert.deepEqual(JSON.parse(JSON.stringify(s.calls[2][2])), {
+    action: 'set',
+    mode: 'model',
+    provider: 'configured',
+    model: 'small',
+    reasoningEffort: 'high',
+  });
+  assert.ok(
+    visit(s.renderPicker(), (node) => node.type === 'select').every(
+      (node) => node.props.disabled,
+    ),
+  );
+
+  const { effortPolicy: _, ...route } = selection;
+  finish({
+    ok: true,
+    value: { ...modelValue({ ...route, reasoningEffort: 'high' }), reasoning },
+  });
+  await saving;
+  const saved = effortSelect(s.renderPicker());
+  assert.equal(saved.props.value, event.target.value);
+  assert.equal(saved.props.disabled, false);
+  cleanup();
+});
+
+test('switching summary models clears explicit effort and effort policy', async () => {
+  for (const effort of [
+    { reasoningEffort: 'high' },
+    { effortPolicy: 'default' },
+  ]) {
+    const s = setup((_path, _method, payload) =>
+      Promise.resolve({
+        ok: true,
+        value: {
+          ...modelValue(
+            payload.action === 'set'
+              ? {
+                  mode: payload.mode,
+                  provider: payload.provider,
+                  model: payload.model,
+                }
+              : {
+                  mode: 'model',
+                  provider: 'configured',
+                  model: 'old',
+                  ...effort,
+                },
+          ),
+          providers: catalog,
+          reasoning: { efforts: [{ id: 'high' }] },
+        },
+      }),
+    );
+    s.renderPicker();
+    const cleanup = s.effects[0]();
+    await flush();
+    await dropdown(s.renderPicker()).props.onChange({
+      target: { value: JSON.stringify(['configured', 'small']) },
+    });
+
+    assert.deepEqual(JSON.parse(JSON.stringify(s.calls[2][2])), {
+      action: 'set',
+      mode: 'model',
+      provider: 'configured',
+      model: 'small',
+    });
+    const tree = s.renderPicker();
+    assert.equal(
+      dropdown(tree).props.value,
+      JSON.stringify(['configured', 'small']),
+    );
+    assert.equal(
+      visit(
+        tree,
+        (node) =>
+          node.type === 'select' && node.props['aria-label'] === 'effort',
+      )[0].props.value,
+      JSON.stringify({ effortPolicy: 'auto' }),
+    );
+    cleanup();
+  }
+});
+
+test('unsupported summary controls disable effort without inventing speed settings', async () => {
+  for (const reasoning of [undefined, { efforts: [] }]) {
+    const s = setup(() =>
+      Promise.resolve({
+        ok: true,
+        value: {
+          ...modelValue({
+            mode: 'model',
+            provider: 'configured',
+            model: 'small',
+          }),
+          providers: catalog,
+          ...(reasoning ? { reasoning } : {}),
+        },
+      }),
+    );
+    s.renderPicker();
+    const cleanup = s.effects[0]();
+    await flush();
+    const tree = s.renderPicker();
+    const selects = visit(tree, (node) => node.type === 'select');
+
+    assert.deepEqual(
+      selects.map((node) => node.props['aria-label']),
+      ['summaryModel', 'effort'],
+    );
+    assert.equal(selects[1].props.disabled, true);
+    assert.deepEqual(
+      visit(selects[1], (node) => node.type === 'option').map((node) =>
+        JSON.parse(node.props.value),
+      ),
+      [{ effortPolicy: 'auto' }, { effortPolicy: 'default' }],
+    );
+    assert.match(text(tree), /effortUnavailable/);
+    assert.doesNotMatch(text(tree), /speed|speedUnsupported/);
+    assert.equal(
+      visit(tree, (node) => ['input', 'button'].includes(node.type)).length,
+      0,
+    );
+    assert.equal(s.calls.filter((call) => call[2].action === 'set').length, 0);
+    cleanup();
+  }
+});
+
+test('follow and off summary modes expose no effort or speed picker', async () => {
+  for (const mode of ['follow', 'off']) {
+    const s = setup(() =>
+      Promise.resolve({
+        ok: true,
+        value: { ...modelValue({ mode }), providers: catalog },
+      }),
+    );
+    s.renderPicker();
+    const cleanup = s.effects[0]();
+    await flush();
+    const tree = s.renderPicker();
+    assert.deepEqual(
+      visit(tree, (node) => node.type === 'select').map(
+        (node) => node.props['aria-label'],
+      ),
+      ['summaryModel'],
+    );
+    assert.doesNotMatch(text(tree), /speed|speedUnsupported/);
+    if (mode === 'follow') {
+      assert.match(text(tree), /effortFollow/);
+    } else {
+      assert.doesNotMatch(text(tree), /effortFollow/);
+    }
+    cleanup();
+  }
 });
 
 test('failed save retains unavailable selected model rather than following chat', async () => {

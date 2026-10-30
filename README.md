@@ -62,7 +62,7 @@ Replace the example path with your checkout's absolute path. Installation applie
 
 1. Follow DSH's restart prompt if one is shown, then refresh the existing DSH page.
 2. Open **What changed** from the conversation header or right-sidebar guide.
-3. Use **Summary model** at the top to choose a model or **Off** for factual cards only. Following the chat model can be expensive.
+3. Open **Settings → Summaries** to choose the summary model and effort, or **Off** for factual cards only. Effort defaults to the model's lowest supported setting. Following the chat model can be expensive.
 4. Expand **Changes** and click a file to inspect its recorded native Review.
 
 Host-side JavaScript updates may require restarting the existing DSH runtime; refreshing the browser alone does not reload Host modules. Do not start a second Web server to update your existing GUI.
@@ -79,7 +79,7 @@ Host-side JavaScript updates may require restarting the existing DSH runtime; re
 | **Grounded narratives**           | Accepted summaries must refer to supplied change IDs. AI text has a source badge; counts and verification remain deterministic evidence.                         |
 | **Graceful fallback**             | Missing models, rejected output, or provider failures leave factual cards available.                                                                             |
 | **Local subagent aggregation**    | Includes observed local subagents; independent session forks are not grouped as subagents. Cached child cards are labeled historical.                            |
-| **Live working state**            | Whale-tail indicator, animated dots, and reduced-motion support while the agent works.                                                                           |
+| **Live working state**            | Whale-tail indicator and DeepSeek's native shimmering working text/ellipsis, with reduced-motion support.                                                        |
 | **Optional debug details**        | Off by default. Exposes a collapsed technical trace without changing what evidence the summary model receives.                                                   |
 
 ### Verification and sensitive access
@@ -119,7 +119,7 @@ The bundle installs plugin row `agent-activity-intelligence`. Use DSH's plugin c
 
 Summaries default to enabled and follow each originating agent's model, so provider usage can occur without selecting a separate model. The acknowledged dropdown choice takes precedence over the initial provider/model defaults and survives restarts; `summaries: false` remains an overriding disable. An unavailable explicit model never silently falls back to a larger chat model.
 
-There is one concurrent summary request, a bounded queue, and no automatic retries for unchanged failed evidence during the same runtime. Low reasoning effort is preferred when supported; the working agent's maximum effort is not inherited. Each path-rule list accepts up to 30 patterns of 200 characters each; invalid regular expressions do not match.
+There is one concurrent summary request, a bounded queue, and no automatic retries for unchanged failed evidence during the same runtime. In **Settings → Summaries**, an explicit summary model's **Effort** offers Auto (the lowest supported effort), Model default, and the exact efforts advertised by that model. Auto uses the first entry of DSH's least-to-greatest capability list, including provider-specific effort IDs; models without effort controls use their provider default. The choice is persisted independently of chat; changing models clears the previous effort. Follow mode also uses the lowest supported effort, not the working agent's effort. No model or effort controls remain in the activity feed. Each path-rule list accepts up to 30 patterns of 200 characters each; invalid regular expressions do not match.
 
 ## Privacy and limits
 

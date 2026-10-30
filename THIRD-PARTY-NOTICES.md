@@ -1,6 +1,13 @@
 # Third-party notices
 
-The working-state whale-tail SVG outline is adapted from DeepSeek Harness's RunningWhaleTail, @deepseek-ai/dsh-client-ui-chat 0.2.1-rc.2. Animation and dots are authored for this plugin.
+## DeepSeek Harness working indicator
+
+- The whale-tail SVG outline is adapted from `RunningWhaleTail` in `@deepseek-ai/dsh-client-ui-chat` 0.2.1-rc.2. The tail's CSS wiggle is authored for this plugin, not DeepSeek's original APNG animation.
+- The working text and ellipsis use DeepSeek's native `TextShimmer` export from `@deepseek-ai/dsh-client-ui-primitives`, supplied by the DSH Web shell. Its shimmer animation, decorative-copy accessibility handling, and reduced-motion behavior are provided by DeepSeek, not reimplemented or bundled by this plugin. The previous custom bouncing-dot animation has been removed.
+
+Upstream: [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness), [TextShimmer component](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/client/ui-primitives/src/TextShimmer.tsx), and [TextShimmer styles](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/client/ui-primitives/src/TextShimmer.module.css).
+
+The upstream MIT notice is retained below.
 
 MIT License
 

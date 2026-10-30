@@ -1,6 +1,22 @@
 import { z } from 'zod';
 
 const routeName = z.string().trim().min(1).max(200);
+const effortOptions = {
+  reasoningEffort: routeName.optional(),
+  effortPolicy: z.enum(['auto', 'default']).optional(),
+};
+
+const explicitSelection = z
+  .object({
+    mode: z.literal('model'),
+    provider: routeName,
+    model: routeName,
+    ...effortOptions,
+  })
+  .strict()
+  .refine((value) => !(value.reasoningEffort && value.effortPolicy), {
+    message: 'Choose either an explicit effort or an effort policy',
+  });
 
 export const ModelActionSchema = z.union([
   z.object({ action: z.literal('get') }).strict(),
@@ -8,21 +24,12 @@ export const ModelActionSchema = z.union([
   z
     .object({ action: z.literal('set'), mode: z.enum(['follow', 'off']) })
     .strict(),
-  z
-    .object({
-      action: z.literal('set'),
-      mode: z.literal('model'),
-      provider: routeName,
-      model: routeName,
-    })
-    .strict(),
+  explicitSelection.safeExtend({ action: z.literal('set') }),
 ]);
 
-const SelectionSchema = z.discriminatedUnion('mode', [
+const SelectionSchema = z.union([
   z.object({ mode: z.enum(['follow', 'off']) }).strict(),
-  z
-    .object({ mode: z.literal('model'), provider: routeName, model: routeName })
-    .strict(),
+  explicitSelection,
 ]);
 
 const SETTINGS_KEY = 'settings_summary_model';
@@ -96,12 +103,39 @@ export class SummaryModelSettings {
   resolve(follow) {
     if (this.config.summaries === false || this.selection.mode === 'off')
       return null;
-    if (this.selection.mode === 'model')
-      return { provider: this.selection.provider, model: this.selection.model };
+    if (this.selection.mode === 'model') {
+      const { mode: _, ...selection } = this.selection;
+      return selection;
+    }
 
     return follow?.provider && follow?.model
       ? { provider: follow.provider, model: follow.model }
       : null;
+  }
+
+  async capabilities(selection, signal) {
+    if (
+      selection.mode !== 'model' ||
+      typeof this.llm.resolveModelInfo !== 'function'
+    )
+      return { reasoning: null };
+    const info = await bounded(
+      this.llm.resolveModelInfo(selection.provider, selection.model, signal),
+      signal,
+    );
+    return {
+      reasoning: info?.reasoning
+        ? {
+            efforts: info.reasoning.efforts.map(({ id, name }) => ({
+              id,
+              name,
+            })),
+            ...(info.reasoning.defaultEffort
+              ? { defaultEffort: info.reasoning.defaultEffort }
+              : {}),
+          }
+        : null,
+    };
   }
 
   async list(signal) {
@@ -148,7 +182,18 @@ export class SummaryModelSettings {
       return { ...row, models };
     });
 
-    return { ...this.get(), providers: boundedRows, errors };
+    const snapshot = this.get();
+    let capabilities = { reasoning: null };
+    try {
+      capabilities = await this.capabilities(snapshot.selection, signal);
+    } catch {
+      errors.push({
+        provider: snapshot.selection.provider || '',
+        message: 'Model effort options unavailable.',
+      });
+    }
+    if (signal?.aborted) throw new Error('Model catalog request cancelled');
+    return { ...snapshot, ...capabilities, providers: boundedRows, errors };
   }
 
   async execute(request, signal) {
@@ -180,6 +225,22 @@ export class SummaryModelSettings {
           throw new Error('Selected model is not available from this provider');
       }
 
+      let capabilities;
+      try {
+        capabilities = await this.capabilities(selection, signal);
+      } catch {
+        throw new Error('Model effort options unavailable');
+      }
+      if (
+        selection.reasoningEffort &&
+        !capabilities.reasoning?.efforts.some(
+          (effort) => effort.id === selection.reasoningEffort,
+        )
+      )
+        throw new Error(
+          'Selected reasoning effort is not supported by this model',
+        );
+
       if (this.closed || signal?.aborted)
         throw new Error('Model selection cancelled');
 
@@ -188,7 +249,7 @@ export class SummaryModelSettings {
       this.selection = selection;
       this.onChanged();
 
-      return this.get();
+      return { ...this.get(), ...capabilities };
     };
 
     const result = this.tail.then(save);
@@ -232,6 +293,17 @@ export function modelToolDefinition(settings) {
           type: 'string',
           description:
             'Model id from list; required only when setting mode=model.',
+        },
+        reasoningEffort: {
+          type: 'string',
+          description:
+            'Explicit effort id from list reasoning.efforts; only for mode=model. Mutually exclusive with effortPolicy.',
+        },
+        effortPolicy: {
+          type: 'string',
+          enum: ['auto', 'default'],
+          description:
+            'Only for mode=model: auto uses the lowest supported effort (the summary default); default uses the provider default. Mutually exclusive with reasoningEffort.',
         },
       },
       required: ['action'],

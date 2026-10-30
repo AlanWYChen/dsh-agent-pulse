@@ -285,11 +285,11 @@ test('explicit summary selection ignores chat route and policy switch cancels ol
   await c.close();
 });
 
-test('summary request uses a supported low effort instead of inheriting max', async () => {
+test('summary request supports automatic, explicit and provider-default effort', async () => {
   let options;
   const llm = {
     resolveModelInfo: async () => ({
-      reasoning: { efforts: [{ id: 'high' }, { id: 'low' }] },
+      reasoning: { efforts: [{ id: 'low' }, { id: 'high' }] },
     }),
 
     async *stream(request) {
@@ -304,13 +304,67 @@ test('summary request uses a supported low effort instead of inheriting max', as
 
   await generateSummary(
     llm,
-    { provider: 'p', model: 'small', reasoningEffort: 'max' },
+    { provider: 'p', model: 'small' },
     {},
     new AbortController().signal,
   );
 
   assert.equal(options.reasoningEffort, 'low');
   assert.equal(options.maxTokens, 800);
+  await generateSummary(
+    llm,
+    { provider: 'p', model: 'small', reasoningEffort: 'high' },
+    {},
+    new AbortController().signal,
+  );
+  assert.equal(options.reasoningEffort, 'high');
+  await generateSummary(
+    llm,
+    { provider: 'p', model: 'small', effortPolicy: 'default' },
+    {},
+    new AbortController().signal,
+  );
+  assert.equal(Object.hasOwn(options, 'reasoningEffort'), false);
+  options = null;
+  await assert.rejects(
+    generateSummary(
+      llm,
+      { provider: 'p', model: 'small', reasoningEffort: 'max' },
+      {},
+      new AbortController().signal,
+    ),
+    /not supported/,
+  );
+  assert.equal(options, null);
+});
+
+test('automatic summary effort uses the lowest advertised opaque id, not a hard-coded alias', async () => {
+  for (const efforts of [
+    [{ id: 'tiny-budget' }, { id: 'low' }],
+    [{ id: 'medium' }, { id: 'high' }],
+    [],
+  ]) {
+    let options;
+    const llm = {
+      resolveModelInfo: async () => ({
+        reasoning: { efforts, defaultEffort: efforts.at(-1)?.id },
+      }),
+      async *stream(request) {
+        options = request;
+        yield { type: 'text-delta', text: '{}' };
+        yield { type: 'finish', reason: { kind: 'stop' } };
+      },
+    };
+    await generateSummary(
+      llm,
+      { provider: 'p', model: 'm' },
+      {},
+      new AbortController().signal,
+    );
+    assert.equal(options.reasoningEffort, efforts[0]?.id);
+    if (!efforts.length)
+      assert.equal(Object.hasOwn(options, 'reasoningEffort'), false);
+  }
 });
 
 test('explicit regeneration retries one completed card without bulk backfill', async () => {

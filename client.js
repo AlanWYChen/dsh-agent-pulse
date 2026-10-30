@@ -2,6 +2,8 @@ window.__ModuleLoader__.load({
   id: '@local/dsh-agent-activity-intelligence',
   factory(require) {
     const React = require('react');
+    // Native DeepSeek text activity animation; see THIRD-PARTY-NOTICES.md.
+    const { TextShimmer } = require('@deepseek-ai/dsh-client-ui-primitives');
     const h = React.createElement;
 
     const ID = '@local/dsh-agent-activity-intelligence';
@@ -13,7 +15,7 @@ window.__ModuleLoader__.load({
     const WHALE_TAIL =
       'M8.844 13.742C8.967 12.328 8.45 10.4 8.45 9.65C8.45 8.94 8.88 8.43 9.6 8.43C11.285 8.43 12.106 8.281 12.685 8.104C13.71 7.791 14.585 6.768 15.055 5.945C15.137 5.803 14.99 5.641 14.829 5.671C13.829 5.86 12.828 5.376 11.827 4.978C10.659 4.514 9.491 4.707 8.935 4.876C8.805 4.915 8.658 4.819 8.636 4.686C8.468 3.643 7.405 2.615 5.498 2.238C4.54 2.048 3.748 1.574 3.347 1.202C3.252 1.113 3.088 1.125 3.03 1.242C2.628 2.059 2.168 3.82 5.248 6.115C5.82 6.494 6.31 6.785 6.574 7.637C6.72 8.104 6.157 9.168 6.061 9.368C5.157 11.27 5.089 12.19 4.926 13.742';
 
-    const runningCss = `.aai-working{display:inline-flex;align-items:center;gap:5px;min-height:20px;color:var(--dsw-alias-brand-primary)}.aai-whale-tail{width:18px;height:18px;overflow:visible;transform-origin:50% 85%;animation:aai-tail-wiggle 1.2s ease-in-out infinite}.aai-working-dots{display:inline-flex;align-items:baseline;gap:1px;font-size:18px;line-height:1}.aai-working-dot{animation:aai-dot-pulse 1.2s ease-in-out infinite}.aai-working-dot:nth-child(2){animation-delay:.15s}.aai-working-dot:nth-child(3){animation-delay:.3s}@keyframes aai-tail-wiggle{0%,100%{transform:rotate(-10deg) translateY(0)}50%{transform:rotate(12deg) translateY(-1px)}}@keyframes aai-dot-pulse{0%,80%,100%{opacity:.3;transform:translateY(0)}40%{opacity:1;transform:translateY(-1px)}}@media(prefers-reduced-motion:reduce){.aai-whale-tail,.aai-working-dot{animation:none}.aai-working-dot{opacity:1}}`;
+    const runningCss = `.aai-working{display:inline-flex;align-items:center;gap:5px;min-height:20px;color:var(--dsw-alias-brand-primary)}.aai-whale-tail{width:18px;height:18px;overflow:visible;transform-origin:50% 85%;animation:aai-tail-wiggle 1.2s ease-in-out infinite}@keyframes aai-tail-wiggle{0%,100%{transform:rotate(-10deg) translateY(0)}50%{transform:rotate(12deg) translateY(-1px)}}@media(prefers-reduced-motion:reduce){.aai-whale-tail{animation:none}}`;
 
     const dictionaries = {
       en: {
@@ -71,6 +73,20 @@ window.__ModuleLoader__.load({
     Object.assign(dictionaries.en, {
       agentWorking: 'Agent is still working',
       summaryModel: 'Summary model',
+      effort: 'Effort',
+      summarySettings: 'Activity summaries',
+      summarySettingsNav: 'Summaries',
+      summarySettingsIntro: 'Choose how activity summaries are generated.',
+      summaryGeneration: 'Generation',
+      summaryModelHint:
+        'Used for activity summaries, independently of your chat model.',
+      effortHint:
+        'Defaults to the lowest effort supported by the selected model.',
+      effortAuto: 'Auto (lowest)',
+      effortDefault: 'Model default',
+      effortUnavailable: 'Effort options unavailable for this model',
+      effortFollow:
+        'Follows the chat model, but uses its lowest supported effort unless overridden by an explicit summary model.',
       follow: 'Follow chat model (may be expensive)',
       off: 'Off — factual only',
       modelScope:
@@ -86,6 +102,18 @@ window.__ModuleLoader__.load({
     Object.assign(dictionaries.zh, {
       agentWorking: '智能体正在工作',
       summaryModel: '摘要模型',
+      effort: '推理强度',
+      summarySettings: '动态摘要',
+      summarySettingsNav: '摘要',
+      summarySettingsIntro: '选择动态摘要的生成方式。',
+      summaryGeneration: '生成设置',
+      summaryModelHint: '仅用于动态摘要，独立于聊天模型。',
+      effortHint: '默认使用所选模型支持的最低推理强度。',
+      effortAuto: '自动（最低）',
+      effortDefault: '模型默认',
+      effortUnavailable: '此模型暂无可用推理强度选项',
+      effortFollow:
+        '跟随聊天模型，但使用其最低可用推理强度；指定摘要模型后可覆盖强度。',
       follow: '跟随聊天模型（可能费用较高）',
       off: '关闭 — 仅显示事实',
       modelScope: '整个配置档案生效 · 不会更改主聊天模型，仅影响之后的摘要。',
@@ -777,16 +805,9 @@ window.__ModuleLoader__.load({
                   }),
                 ),
                 h(
-                  'span',
-                  { className: 'aai-working-label' },
-                  t('agentWorking'),
-                ),
-                h(
-                  'span',
-                  { className: 'aai-working-dots', 'aria-hidden': true },
-                  [0, 1, 2].map((i) =>
-                    h('span', { className: 'aai-working-dot', key: i }, '.'),
-                  ),
+                  TextShimmer,
+                  { className: 'aai-working-label', active: true },
+                  `${t('agentWorking')}...`,
                 ),
               )
             : card.title,
@@ -1001,7 +1022,7 @@ window.__ModuleLoader__.load({
         };
       }, [modelRpc, visible]);
 
-      const save = async (event) => {
+      const save = async (event, effortChange = false) => {
         const controller = controllerRef.current;
         if (
           !settings ||
@@ -1012,10 +1033,18 @@ window.__ModuleLoader__.load({
           return;
 
         const key = event.target.value;
-        if (key === selectionKey(settings.selection)) return;
+        if (!effortChange && key === selectionKey(settings.selection)) return;
 
         let selection;
-        if (key === 'follow' || key === 'off') selection = { mode: key };
+        if (effortChange) {
+          if (settings.selection.mode !== 'model') return;
+          const {
+            reasoningEffort: _,
+            effortPolicy: __,
+            ...route
+          } = settings.selection;
+          selection = { ...route, ...JSON.parse(key) };
+        } else if (key === 'follow' || key === 'off') selection = { mode: key };
         else {
           const [provider, model] = JSON.parse(key);
           selection = { mode: 'model', provider, model };
@@ -1065,9 +1094,17 @@ window.__ModuleLoader__.load({
         { className: 'aai-model' },
         h(
           'label',
-          null,
-          h('span', { className: 'aai-muted' }, t('summaryModel')),
-          ' ',
+          { className: 'aai-setting-row' },
+          h(
+            'span',
+            { className: 'aai-setting-copy' },
+            h('span', { className: 'aai-setting-title' }, t('summaryModel')),
+            h(
+              'span',
+              { className: 'aai-setting-description' },
+              t('summaryModelHint'),
+            ),
+          ),
           h(
             'select',
             {
@@ -1110,6 +1147,76 @@ window.__ModuleLoader__.load({
             ),
           ),
         ),
+        selection?.mode === 'model' &&
+          h(
+            'label',
+            { className: 'aai-setting-row' },
+            h(
+              'span',
+              { className: 'aai-setting-copy' },
+              h('span', { className: 'aai-setting-title' }, t('effort')),
+              h(
+                'span',
+                { className: 'aai-setting-description' },
+                t('effortHint'),
+              ),
+            ),
+            h(
+              'select',
+              {
+                className: 'aai-model-select',
+                'aria-label': t('effort'),
+                value: JSON.stringify(
+                  selection.reasoningEffort
+                    ? { reasoningEffort: selection.reasoningEffort }
+                    : { effortPolicy: selection.effortPolicy || 'auto' },
+                ),
+                disabled:
+                  status === 'loading' ||
+                  status === 'saving' ||
+                  !settings.reasoning?.efforts?.length,
+                onChange: (event) => save(event, true),
+              },
+              h(
+                'option',
+                { value: JSON.stringify({ effortPolicy: 'auto' }) },
+                t('effortAuto'),
+              ),
+              h(
+                'option',
+                { value: JSON.stringify({ effortPolicy: 'default' }) },
+                t('effortDefault'),
+              ),
+              selection.reasoningEffort &&
+                !settings.reasoning?.efforts?.some(
+                  (effort) => effort.id === selection.reasoningEffort,
+                ) &&
+                h(
+                  'option',
+                  {
+                    value: JSON.stringify({
+                      reasoningEffort: selection.reasoningEffort,
+                    }),
+                    disabled: true,
+                  },
+                  `${t('modelUnavailable')}: ${selection.reasoningEffort}`,
+                ),
+              (settings.reasoning?.efforts || []).map((effort) =>
+                h(
+                  'option',
+                  {
+                    key: effort.id,
+                    value: JSON.stringify({ reasoningEffort: effort.id }),
+                  },
+                  effort.name || effort.id,
+                ),
+              ),
+            ),
+            !settings.reasoning?.efforts?.length &&
+              h('div', { className: 'aai-muted' }, t('effortUnavailable')),
+          ),
+        selection?.mode === 'follow' &&
+          h('div', { className: 'aai-muted' }, t('effortFollow')),
         h('div', { className: 'aai-muted' }, t('modelScope')),
         settings?.summariesEnabled === false &&
           h('div', { className: 'aai-muted' }, t('modelDisabled')),
@@ -1129,13 +1236,52 @@ window.__ModuleLoader__.load({
       );
     }
 
+    // Keep these styles local: the Settings shell owns page padding and layout.
+    const settingsCss = `
+.aai-settings{width:100%;min-width:0;color:var(--dsw-alias-label-primary);font:inherit;font-size:14px;line-height:22px}
+.aai-settings *{box-sizing:border-box}
+.aai-settings h2{margin:0;font-size:16px;font-weight:500;line-height:24px}
+.aai-settings-intro{margin:8px 0 24px;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:20px}
+.aai-settings-card{border:1px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-lg,12px);padding:0 16px}
+.aai-settings-card h3{margin:0;padding:16px 0;font-size:14px;font-weight:500;line-height:22px;border-bottom:1px solid var(--dsw-alias-border-l2)}
+.aai-settings .aai-model{margin:0}
+.aai-settings .aai-setting-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,270px);align-items:center;gap:12px 24px;margin:0;padding:20px 0;border-bottom:1px solid var(--dsw-alias-border-l2)}
+.aai-setting-copy{display:flex;flex-direction:column;gap:4px;min-width:0}
+.aai-setting-title{font-size:14px;line-height:20px}
+.aai-setting-description,.aai-settings .aai-muted{color:var(--dsw-alias-label-secondary);font-size:12px;line-height:18px;overflow-wrap:anywhere}
+.aai-settings .aai-model-select{appearance:none;display:block;width:100%;min-width:0;max-width:100%;height:36px;padding:0 34px 0 12px;border:1px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-md,8px);font:inherit;font-size:13px;color:var(--dsw-alias-label-primary);background-color:var(--dsw-alias-bg-layer-2);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath d='m4 6 4 4 4-4' fill='none' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;text-overflow:ellipsis;cursor:pointer}
+.aai-settings .aai-model-select:hover:not(:disabled){border-color:var(--dsw-alias-label-tertiary)}
+.aai-settings .aai-model-select:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:2px}
+.aai-settings .aai-model-select:disabled{opacity:.5;cursor:not-allowed}
+.aai-settings .aai-model>.aai-muted{margin:12px 0}
+.aai-setting-row>.aai-muted{grid-column:1/-1}
+.aai-settings [role=alert]{color:var(--dsw-alias-state-error-primary)}
+.aai-settings [role=status]:empty{display:none}
+@media(max-width:640px){.aai-settings .aai-setting-row{grid-template-columns:minmax(0,1fr);gap:12px}.aai-settings .aai-model-select{width:100%}}
+`;
+
+    function SummarySettings({ modelRpc, t }) {
+      return h(
+        'section',
+        { className: 'aai-settings', 'aria-label': t('summarySettings') },
+        h('style', null, settingsCss),
+        h('h2', null, t('summarySettings')),
+        h('p', { className: 'aai-settings-intro' }, t('summarySettingsIntro')),
+        h(
+          'div',
+          { className: 'aai-settings-card' },
+          h('h3', null, t('summaryGeneration')),
+          h(ModelPicker, { modelRpc, visible: true, t }),
+        ),
+      );
+    }
+
     function Panel({
       sessionId,
       useProjection,
       useSessions,
       useTabInfo,
       watch,
-      modelRpc,
       openDiff,
       summaryRpc,
       t,
@@ -1223,7 +1369,6 @@ window.__ModuleLoader__.load({
           h('h2', null, t('title')),
           h('div', { className: 'aai-muted' }, t('scope')),
           h('div', { className: 'aai-muted' }, t('inferred')),
-          h(ModelPicker, { modelRpc, visible, t }),
           h(
             'label',
             { className: 'aai-muted' },
@@ -1407,6 +1552,22 @@ window.__ModuleLoader__.load({
         };
 
         ctx.effect(() =>
+          ctx.slots.inject('settings.section', () =>
+            ctx.slots.register(
+              {
+                name: 'settings.section',
+                id: ID,
+                order: 45,
+                label: () => t('summarySettingsNav'),
+                locale: NS,
+                inject: () => ({ modelRpc }),
+              },
+              SummarySettings,
+            ),
+          ),
+        );
+
+        ctx.effect(() =>
           ctx.sidebarRightTabs.register({
             id: ID,
             kind: KIND,
@@ -1473,7 +1634,6 @@ window.__ModuleLoader__.load({
                 locale: NS,
                 inject: () => ({
                   watch,
-                  modelRpc,
                   diffRpc,
                   summaryRpc,
                   openDiff,

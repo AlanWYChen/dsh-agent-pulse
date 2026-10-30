@@ -184,6 +184,104 @@ test('concurrent changes serialize and cancelled selections do not commit', asyn
   assert.equal(settings.get().selection.mode, 'off');
 });
 
+test('effort capabilities validate, persist and route independently of chat', async () => {
+  const { settings, table, llm } = setup();
+  llm.resolveModelInfo = async () => ({
+    reasoning: {
+      efforts: [
+        { id: 'low', name: 'Low' },
+        { id: 'high', name: 'High' },
+      ],
+      defaultEffort: 'high',
+    },
+  });
+  const choice = {
+    mode: 'model',
+    provider: 'p',
+    model: 'small',
+    reasoningEffort: 'high',
+  };
+  const saved = await settings.execute({ action: 'set', ...choice }, signal());
+  assert.deepEqual(saved.selection, choice);
+  assert.equal(saved.reasoning.defaultEffort, 'high');
+  assert.deepEqual((await settings.list(signal())).reasoning.efforts, [
+    { id: 'low', name: 'Low' },
+    { id: 'high', name: 'High' },
+  ]);
+  assert.deepEqual(
+    new SummaryModelSettings({ table, llm, config: {} }).get().selection,
+    choice,
+  );
+  assert.deepEqual(
+    settings.resolve({
+      provider: 'chat',
+      model: 'other',
+      reasoningEffort: 'low',
+    }),
+    {
+      provider: 'p',
+      model: 'small',
+      reasoningEffort: 'high',
+    },
+  );
+  for (const options of [
+    { reasoningEffort: 'unsupported' },
+    { reasoningEffort: 'high', effortPolicy: 'auto' },
+    { speed: 'fast' },
+  ]) {
+    await assert.rejects(
+      settings.execute(
+        {
+          action: 'set',
+          mode: 'model',
+          provider: 'p',
+          model: 'small',
+          ...options,
+        },
+        signal(),
+      ),
+    );
+    assert.deepEqual(settings.get().selection, choice);
+  }
+  await settings.execute(
+    {
+      action: 'set',
+      mode: 'model',
+      provider: 'p',
+      model: 'large',
+      effortPolicy: 'default',
+    },
+    signal(),
+  );
+  assert.deepEqual(settings.resolve(null), {
+    provider: 'p',
+    model: 'large',
+    effortPolicy: 'default',
+  });
+});
+
+test('missing effort capabilities reject explicit effort but retain legacy selections', async () => {
+  const { settings } = setup();
+  await assert.rejects(
+    settings.execute(
+      {
+        action: 'set',
+        mode: 'model',
+        provider: 'p',
+        model: 'small',
+        reasoningEffort: 'high',
+      },
+      signal(),
+    ),
+    /not supported/,
+  );
+  await settings.execute(
+    { action: 'set', mode: 'model', provider: 'p', model: 'small' },
+    signal(),
+  );
+  assert.equal((await settings.list(signal())).reasoning, null);
+});
+
 test('provider failures produce concise errors rather than leaked provider diagnostics', async () => {
   const { settings, llm } = setup();
 

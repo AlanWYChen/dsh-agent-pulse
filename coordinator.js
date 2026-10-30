@@ -29,15 +29,20 @@ export async function generateSummary(llm, selection, input, signal) {
   let text = '';
   let finished = false;
 
-  // Do not inherit the working agent's reasoning effort. Prefer a supported low-cost effort.
+  // Summary controls stay independent from the working agent's settings.
   const info =
     typeof llm.resolveModelInfo === 'function'
       ? await llm.resolveModelInfo(selection.provider, selection.model, signal)
       : undefined;
   const efforts = info?.reasoning?.efforts ?? [];
-  const effort = ['none', 'minimal', 'low'].find((id) =>
-    efforts.some((item) => item.id === id),
-  );
+  if (
+    selection.reasoningEffort &&
+    !efforts.some((item) => item.id === selection.reasoningEffort)
+  )
+    throw new Error('Selected reasoning effort is not supported by this model');
+  const effort =
+    selection.reasoningEffort ??
+    (selection.effortPolicy === 'default' ? undefined : efforts[0]?.id);
 
   for await (const chunk of llm.stream({
     provider: selection.provider,

@@ -53,4 +53,4 @@ Updated Host-side JavaScript generations may require restarting the **existing**
 
 The explicit `files` list in [package metadata](../package.json) determines the distributable bundle. Both READMEs, the documentation directory, and [Third-party notices](../THIRD-PARTY-NOTICES.md) are included. Tests, dependencies installed in the checkout, and local caches are not source deliverables in that list.
 
-The plugin icon is original artwork. The working-state whale-tail outline is adapted from DSH's MIT-licensed chat indicator; animation and dots are authored for this plugin. No duplicate React runtime is included.
+The plugin icon is original artwork. The working-state whale-tail outline is adapted from DSH's MIT-licensed chat indicator; only its CSS wiggle is authored for this plugin. Working text and ellipsis reuse DeepSeek's native `TextShimmer` component from the DSH Web shell, including its animation, accessibility, and reduced-motion handling. No custom dot animation or duplicate React runtime is included. See [Third-party notices](../THIRD-PARTY-NOTICES.md).
