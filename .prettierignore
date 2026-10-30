@@ -5,3 +5,4 @@ dist/
 build/
 *.tgz
 package-lock.json
+.github/
