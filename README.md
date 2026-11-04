@@ -121,6 +121,8 @@ Summaries default to enabled and follow each originating agent's model, so provi
 
 There is one concurrent summary request, a bounded queue, and no automatic retries for unchanged failed evidence during the same runtime. In **Settings → Summaries**, an explicit summary model's **Effort** offers Auto (the lowest supported effort), Model default, and the exact efforts advertised by that model. Auto uses the first entry of DSH's least-to-greatest capability list, including provider-specific effort IDs; models without effort controls use their provider default. The choice is persisted independently of chat; changing models clears the previous effort. Follow mode also uses the lowest supported effort, not the working agent's effort. No model or effort controls remain in the activity feed. Each path-rule list accepts up to 30 patterns of 200 characters each; invalid regular expressions do not match.
 
+Subagent activities can also use DSH's native task label and a bounded, redacted assistant-result preview. These are labeled **Agent report (unverified)**, not proof of implemented changes or passing tests. Research-only results do not require an extra summary-model request; reports also provide a fallback while an edit-based summary is pending or unavailable.
+
 ## Privacy and limits
 
 - **AI summaries send code excerpts to your selected provider.** Inputs are bounded and redacted, not metadata-only. Choose **Off** if those excerpts must not leave your machine.

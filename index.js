@@ -99,7 +99,7 @@ export async function apply(ctx, config) {
 
   ctx.sessionProjections.register({
     key: PROJECTION_KEY,
-    stateVersion: 2,
+    stateVersion: 3,
     stateSchema: z.json(),
     init: initState,
     apply: (state, event) => reduceEvent(state, event, config),

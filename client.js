@@ -130,6 +130,7 @@ window.__ModuleLoader__.load({
       technicalTrace: 'Technical trace',
       changeBased: 'AI summary · recorded changes',
       metadataBased: 'AI summary · metadata',
+      agentReport: 'Native task / agent report · unverified',
       insufficient: 'Not enough change context for a behavioral summary.',
       summaryFailed: 'Summary failed',
       diffLoading: 'Loading changes…',
@@ -159,6 +160,7 @@ window.__ModuleLoader__.load({
       technicalTrace: '技术追踪',
       changeBased: 'AI 摘要 · 已记录变更',
       metadataBased: 'AI 摘要 · 元数据',
+      agentReport: '原生任务 / Agent 自述 · 未验证',
       insufficient: '变更上下文不足，无法生成行为级摘要。',
       summaryFailed: '摘要生成失败',
       diffLoading: '正在加载变更…',
@@ -764,21 +766,26 @@ window.__ModuleLoader__.load({
           ),
           card.status && h('span', null, `${t('status')}: ${card.status}`),
           cached && h('span', null, t('cached')),
-          ['changes', 'metadata'].includes(card.summarySource) &&
+          ['changes', 'metadata', 'agent-report'].includes(
+            card.summarySource,
+          ) &&
             h(
               'span',
               { className: 'aai-source' },
               t(
                 card.summarySource === 'changes'
                   ? 'changeBased'
-                  : 'metadataBased',
+                  : card.summarySource === 'agent-report'
+                    ? 'agentReport'
+                    : 'metadataBased',
               ),
             ),
         ),
         h(
           'h3',
           null,
-          card.summaryStatus === 'in_progress'
+          card.summaryStatus === 'in_progress' &&
+            card.summarySource !== 'agent-report'
             ? h(
                 'span',
                 {

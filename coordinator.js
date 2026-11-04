@@ -4,6 +4,7 @@ import {
   applySummary,
   viewState,
   summaryValidationIssue,
+  reportedSummary,
 } from './engine.js';
 
 const sessionCacheKey = (id) =>
@@ -185,6 +186,13 @@ export class ActivityCoordinator {
         status: 'in_progress',
         reason:
           'This turn is still running; its behavior summary will be generated when it ends.',
+      };
+
+    if (!card._modifications && card._nativeActivity)
+      return {
+        status: 'reported',
+        reason:
+          'Native subagent report is available; no recorded edits require a behavior summary.',
       };
 
     const key = fingerprint(card);
@@ -422,6 +430,16 @@ export class ActivityCoordinator {
             ...publicCard,
             summaryStatus,
             summarySource: cached.source || 'metadata',
+          };
+
+        const fallback = reportedSummary(original, entry.state);
+        if (fallback)
+          return {
+            ...publicCard,
+            ...fallback,
+            summaryStatus: original._finalized ? 'reported' : 'in_progress',
+            behaviorSummaryStatus: summaryStatus,
+            summaryIssue: cached?.rejectionReason ?? null,
           };
 
         const pending = ['queued', 'pending'].includes(summaryStatus);

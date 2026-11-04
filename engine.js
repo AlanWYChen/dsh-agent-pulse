@@ -1,6 +1,7 @@
 import { redactText } from './change-context.js';
 
 // Deterministic, JSON-only projection. Raw arguments and tool output never enter state.
+// Subagent labels and assistant reports enter only as bounded, redacted previews.
 export const PROJECTION_KEY = 'agentActivityIntelligence';
 const MAX_EVIDENCE = 30;
 const MAX_DEDUPE = 512;
@@ -33,7 +34,7 @@ const safePattern = (pattern, value) => {
 
 export function initState(header = {}, inheritedEventCount = 0) {
   return {
-    version: 2,
+    version: 3,
     agentId: String(header.agentId ?? header.id ?? header.sessionId ?? 'agent'),
     sessionId: String(header.sessionId ?? header.id ?? 'agent'),
     origin: typeof header.origin === 'string' ? header.origin : null,
@@ -409,6 +410,31 @@ function scopeSupports(test, files) {
   );
 }
 
+// Native task labels and closing reports are previews, never verification. Redact before
+// bounding so a clipped credential/private-key block cannot escape detection.
+function nativePreview(value, limit) {
+  return typeof value === 'string'
+    ? redactText(value)
+        .replace(/[\u0000-\u001f\u007f]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, limit)
+    : '';
+}
+
+export function reportedSummary(card, state) {
+  const report = card._reportedResult;
+  const task = state.taskLabel;
+  if (!report && !task) return null;
+  return {
+    title: task || 'Subagent reported result',
+    summary: report
+      ? `Agent report (unverified): ${report}`
+      : `Task: ${task}. No closing result has been observed yet.`,
+    summarySource: 'agent-report',
+  };
+}
+
 export function reduceEvent(state, event, config = {}) {
   // Durable session events arrive in seq order; the accepted-event watermark blocks
   // replay even after bounded diagnostic/deduplication windows have rolled over.
@@ -420,6 +446,75 @@ export function reduceEvent(state, event, config = {}) {
     state.seen.includes(event.seq)
   )
     return state;
+
+  if (state.origin === 'subagent' && event.type === 'subagent/descriptor') {
+    return {
+      ...state,
+      taskLabel: nativePreview(event.data?.label, 100),
+      watermark: event.seq,
+      seen: [...state.seen, event.seq].slice(-MAX_DEDUPE),
+    };
+  }
+
+  if (
+    state.origin === 'subagent' &&
+    state.taskLabel &&
+    event.type === 'turn/start'
+  ) {
+    const id = `outcome:${String(event.data?.turn ?? 'unknown')}`;
+    if (state.cards.some((card) => card.id === id)) return state;
+    return {
+      ...state,
+      cards: [
+        ...state.cards,
+        {
+          ...baseCard(state, event, id, 'outcome', []),
+          _nativeActivity: true,
+        },
+      ].slice(
+        -(Number.isSafeInteger(config.maxCards) && config.maxCards > 0
+          ? config.maxCards
+          : 100),
+      ),
+      watermark: event.seq,
+      seen: [...state.seen, event.seq].slice(-MAX_DEDUPE),
+    };
+  }
+
+  if (state.origin === 'subagent' && event.type === 'assistant/message') {
+    const content = event.data?.message?.content ?? event.data?.content;
+    const text =
+      typeof content === 'string'
+        ? content
+        : Array.isArray(content)
+          ? content
+              .filter(
+                (part) =>
+                  part?.type === 'text' && typeof part.text === 'string',
+              )
+              .at(-1)?.text || ''
+          : '';
+    const report = nativePreview(text, 600);
+    if (!report) return state;
+    const id = `outcome:${String(event.data?.turn ?? 'unknown')}`;
+    const previous = state.cards.find((card) => card.id === id);
+    const card = {
+      ...(previous || baseCard(state, event, id, 'outcome', [])),
+      _reportedResult: report,
+      _nativeActivity: true,
+    };
+    addEvidence(card, event, 'Subagent self-report (unverified)');
+    return {
+      ...state,
+      cards: [...state.cards.filter((item) => item.id !== id), card].slice(
+        -(Number.isSafeInteger(config.maxCards) && config.maxCards > 0
+          ? config.maxCards
+          : 100),
+      ),
+      watermark: event.seq,
+      seen: [...state.seen, event.seq].slice(-MAX_DEDUPE),
+    };
+  }
 
   if (event.type === 'workspace/changes') {
     return {
