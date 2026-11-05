@@ -43,9 +43,29 @@ Root-level `*.test.js` files cover evidence projection, summary coordination, co
 
 When modifying evidence or summaries, retain tests for failed/denied tools, stale or partial verification, redaction, missing historical context, and uncertain concurrent-agent attribution. Never replace missing historical evidence with a current-disk comparison.
 
+## Install a local checkout
+
+For development, use Git, npm, and a Node.js version supported by your DSH release:
+
+```sh
+git clone https://github.com/AlanWYChen/dsh-agent-pulse.git
+cd dsh-agent-pulse
+npm ci --ignore-scripts
+pwd
+```
+
+Ask the agent in your existing DSH instance:
+
+```text
+Install the local DSH plugin bundle at /absolute/path/to/dsh-agent-pulse
+using plugin_manager → install_bundle.
+```
+
+Replace the path with the absolute checkout directory printed by `pwd`. Keep that directory available for the local installation.
+
 ## Run in DSH
 
-Install this checkout's absolute directory using DSH `plugin_manager` → `install_bundle`, in the profile you actually use. The package is private/local; do not assume it is available from npm.
+Install this checkout's absolute directory using DSH `plugin_manager` → `install_bundle`, in the profile you actually use. The bundle is installed locally from this public repository; it is not published to npm.
 
 Updated Host-side JavaScript generations may require restarting the **existing** DSH runtime. Refreshing the page alone does not reload Host modules. Do not start a second Web server: a new server does not update the GUI already open in the browser. Do not promise automatic client reload unless the corresponding DSH development watcher is actually running.
 
