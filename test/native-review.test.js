@@ -220,7 +220,11 @@ for (const firstRead of ['prepare', 'diff']) {
     });
     assert.equal(after.editorPath, '/project/src/a.js');
     assert.equal(after.status, 'available');
-    assert.equal(f.calls.length, 0, 'navigation does not fetch native diff content');
+    assert.equal(
+      f.calls.length,
+      0,
+      'navigation does not fetch native diff content',
+    );
   });
 
   test(`late workspace comparison still rejects wrong turn or path after ${firstRead}`, async () => {
@@ -232,7 +236,11 @@ for (const firstRead of ['prepare', 'diff']) {
       const f = delayedWorkspaceFixture(options, workspaceTurn);
       const file = f.service.describe(f.session, f.card)[0];
       if (firstRead === 'prepare') await f.service.prepare(f.session, f.card);
-      else assert.equal((await f.service.diff(f.session, f.card, file.id)).nativeReview, null);
+      else
+        assert.equal(
+          (await f.service.diff(f.session, f.card, file.id)).nativeReview,
+          null,
+        );
       f.appendWorkspace();
       const after = await f.service.diff(f.session, f.card, file.id);
       assert.equal(after.nativeReview, null);
@@ -242,7 +250,10 @@ for (const firstRead of ['prepare', 'diff']) {
   });
 }
 
-for (const laterHistory of ['rolled snapshot window', 'transient snapshot failure']) {
+for (const laterHistory of [
+  'rolled snapshot window',
+  'transient snapshot failure',
+]) {
   test(`discovered late Review survives ${laterHistory}`, async () => {
     const f = delayedWorkspaceFixture({ files: ['src/b.js', 'src/a.js'] });
     const cardBefore = structuredClone(f.card);

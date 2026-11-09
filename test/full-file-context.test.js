@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { completeReadText, reconstructFullFile } from '../src/full-file-context.js';
+import {
+  completeReadText,
+  reconstructFullFile,
+} from '../src/full-file-context.js';
 import { ChangeContextService } from '../src/change-context.js';
 
 function fixture() {

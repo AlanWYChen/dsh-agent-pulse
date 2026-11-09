@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { SummaryModelSettings, modelToolDefinition } from '../src/model-settings.js';
+import {
+  SummaryModelSettings,
+  modelToolDefinition,
+} from '../src/model-settings.js';
 
 const signal = () => new AbortController().signal;
 
