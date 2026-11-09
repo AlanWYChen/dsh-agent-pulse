@@ -19,13 +19,16 @@
 
 ### Verification and sensitive access
 
-| Feature                            | Behavior                                                                                                                                                                                                  |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Recognized test summaries**      | Numeric Node TAP/spec, pytest, Vitest, and Jest summaries from supported foreground commands. A zero exit code alone never supplies a pass count.                                                         |
-| **Partial and stale verification** | Selected tests are labeled partial when their scope cannot cover all changed files. Later modifications stale earlier verification.                                                                       |
-| **Sensitive-file alerts**          | Direct `read` / `read_image` access to recognized `.env` variants, SSH configuration/keys, credentials, and common secret-file extensions. Template/example `.env` files are excluded from access alerts. |
-| **Distinct access outcomes**       | Successful access, denied attempts, and failed attempts are shown separately.                                                                                                                             |
-| **Custom path rules**              | Add case-insensitive sensitive-path regular expressions and exclusions through plugin configuration.                                                                                                      |
+| Feature                            | Behavior                                                                                                                                                                                                    |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Recognized test summaries**      | Numeric Node TAP/spec, pytest, Vitest, and Jest summaries from supported foreground commands. A zero exit code alone never supplies a pass count.                                                           |
+| **Partial and stale verification** | Selected tests are labeled partial when their scope cannot cover all changed files. Later modifications stale earlier verification.                                                                         |
+| **Separate checks**                | `npm run check`/`lint`/`typecheck`/`format:check`, `prettier --check`, `tsc --noEmit`, `eslint`, and `node --check` are recorded in a collapsed Checks section and never count as tests or certify changes. |
+| **Piped runs**                     | Test/check commands at the start of a pipeline are recorded for history; the pipeline exit code is not treated as verification.                                                                             |
+| **Delegated subtasks**             | Owned child cards are grouped in a collapsed Subtasks section. Exact assignment evidence wins; timestamp-based placement is explicitly inferred, and child Reviews remain clickable.                        |
+| **Sensitive-file alerts**          | Direct `read` / `read_image` access to recognized `.env` variants, SSH configuration/keys, credentials, and common secret-file extensions. Template/example `.env` files are excluded from access alerts.   |
+| **Distinct access outcomes**       | Successful access, denied attempts, and failed attempts are shown separately.                                                                                                                               |
+| **Custom path rules**              | Add case-insensitive sensitive-path regular expressions and exclusions through plugin configuration.                                                                                                        |
 
 ### Review and summary controls
 

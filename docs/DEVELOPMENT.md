@@ -19,7 +19,13 @@ Run `npm run format` to apply Prettier across source, tests, documentation, and 
 
 ## Repository layout
 
-Runtime modules and their tests remain at the repository root to preserve existing package exports and test commands. User-facing setup and features belong in the READMEs; detailed trust boundaries belong in [Privacy and evidence boundaries](PRIVACY.md).
+```text
+src/                 runtime modules
+test/                Node test files
+scripts/             test, package, and compatibility checks
+```
+
+User-facing setup and features belong in the READMEs; detailed trust boundaries belong in [Privacy and evidence boundaries](PRIVACY.md).
 
 | File                                                                      | Responsibility                                                                           |
 | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
@@ -36,6 +42,12 @@ Runtime modules and their tests remain at the repository root to preserve existi
 | [client.js](../src/client.js)                                             | Native Review navigation, legacy sidebar previews, model selection, and debug details.   |
 | [cordis.patch.yml](../cordis.patch.yml)                                   | Local bundle plugin-row declaration and initial configuration.                           |
 | [English locale](../locale/en.json) / [Chinese locale](../locale/zh.json) | Plugin title and description; main panel control dictionaries live in the client module. |
+
+## Storage and recovery
+
+The authoritative event history is the DSH session log under `~/.dsh/sessions/`. The sidebar projection and caches live under `~/.dsh/storages/agent_activity_intelligence/cache/` (`session_*`, `summary_*`, `fileSnapshot_*`, `testOutput_*`, and `assignmentBinding_*` records). The projection rebuilds cards from the session log, but accepted summaries and captured artifacts may not be reconstructible.
+
+A page refresh reloads only browser code. After changing or reinstalling Host modules, restart the existing DSH process so it loads `src/index.js` and replays the session. Do not delete the cache directory casually.
 
 ## Test coverage
 

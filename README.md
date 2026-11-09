@@ -28,34 +28,32 @@ _From 13 subagents to a readable outcome summary, then into the recorded code ch
 
 ## What you can see
 
-| Question                 | What the feed shows                                                                                  |
-| ------------------------ | ---------------------------------------------------------------------------------------------------- |
-| What changed?            | Turn-based cards with optional AI explanations of behavior changes.                                  |
-| Was it tested?           | Observed test counts, partial verification, and results made stale by later edits.                   |
-| What needs attention?    | Failed modifications, observed test failures, and recognized sensitive-file access.                  |
-| Where is the evidence?   | Changed-file links open native **Review · turn N**. Missing native evidence shows an explicit error. |
-| What if the model fails? | Factual cards remain available; AI summaries can also be turned off.                                 |
+| Question                 | What the feed shows                                                                                                    |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| What changed?            | Turn-based cards with optional AI explanations of behavior changes.                                                    |
+| Was it tested?           | Observed test runs, a separate Checks section, partial verification, and results made stale by later edits.            |
+| What about subtasks?     | Delegated work is grouped in a collapsed Subtasks section inside its owning card.                                      |
+| What needs attention?    | Failed modifications, observed test failures, and recognized sensitive-file access.                                    |
+| Where is the evidence?   | Changed-file links open native **Review · turn N**, including matching child Reviews. Missing evidence shows an error. |
+| What if the model fails? | Factual cards remain available; AI summaries can also be turned off.                                                   |
 
 ## How it works
 
-1. **Collect recorded evidence.** DSH events feed a replayable projection of changes, recognized test results, and direct sensitive-file access. Recorded workspace comparisons can supplement direct edits; uncertain concurrent-agent attribution stays explicit.
+1. **Collect recorded evidence.** DSH events feed a replayable projection of changes, test and check runs, delegated work, and direct sensitive-file access. Recorded workspace comparisons can supplement direct edits; uncertain concurrent-agent attribution stays explicit.
 2. **Explain behavior changes.** At turn checkpoints, an optional model receives bounded, redacted change excerpts and task context. Accepted change-based summaries must reference supplied change IDs. Reference validation does not prove every narrative claim is correct.
-3. **Keep verification independent.** Test counts and verification labels come from observed execution evidence, not AI text. A successful exit alone does not establish passing tests; later edits can make earlier results stale.
+3. **Keep verification independent.** Test counts and verification labels come from observed execution evidence, not AI text; check runs are recorded separately and never certify changes. A successful exit alone does not establish passing tests; later edits can make earlier results stale.
 4. **Keep evidence available.** Missing models, rejected summaries, and provider failures leave factual cards intact. Clicking a changed file opens its recorded native Review. The plugin does not provide a substitute custom diff viewer; missing native Review evidence shows an explicit error.
 
 The implementation separates evidence projection ([src/engine.js](src/engine.js)), summary scheduling ([src/coordinator.js](src/coordinator.js)), and the sidebar ([src/client.js](src/client.js)). See the [development guide](docs/DEVELOPMENT.md) for the full module map.
 
-### Test history and delegated agents
+### Test runs, checks, and delegated work
 
-Each card keeps observed test runs in a collapsible disclosure, newest first, titled by their runner command rather than an opaque execution ID, with parsed passed/failed/skipped counts when available. Run history starts collapsed by default and expands on demand. Command completion, assertion results, and verification of changed files are separate: an exit code of zero alone is not a parsed test pass. Assignment-linked delegated runs roll up into the owning parent outcome, not whichever parent card is newest, and never certify the parent's changes. Without exact assignment evidence, the observed parent/child session relationship and timestamps place child outcomes under the nearest parent outcome card as explicitly inferred work; cards with no visible parent outcome or no usable timestamp retain the qualified session-level fallback.
-
-Delegated task subcards are grouped into one collapsed **Subtasks** disclosure inside their owning outcome card, between Test runs and Changes. Exact assignment evidence keeps each child turn under its exact parent task. When that evidence is unavailable, the child session's cards appear inside the nearest parent outcome card's Subtasks group, keeping one shared indent while only the group collapses. Delegation receipts already represented by a visible child card are not repeated as empty follow-up rows. When a reused child has follow-up assignments on later parent cards, its later outcomes move with those assignments instead of staying anchored to its first card. A delivered follow-up with no matched child outcome is labeled as awaiting child evidence rather than historical. Parent cards that only have delegated file labels resolve those labels to the matching child card's Review entry. A card with changes but no parsed test run shows an explicit `Test runs (0)` gap. Lint, typecheck, format/check, `tsc --noEmit`, and `node --check` invocations appear in a separate collapsed **Checks** section and never count as tests. All direct subtask cards share the same subtle left indent and render without their own collapse control; only the outer Subtasks group collapses. Historical delegations that cannot be linked to exact child evidence and cannot be placed from observed timestamps are collapsed into one labeled group instead of empty expandable cards. A spawn without inbox identities still owns its deterministic first child turn. Reusing a child agent for a later parent task creates a separate assignment there. Pure orchestrators summarize their linked children's results, with parent/child reports explicitly unverified. Individual subtask cards stay expanded inside the collapsed Subtasks group. Further delegation nests logically while visual indentation stays bounded and deeper tasks show breadcrumbs.
-
-Ownership uses accepted delegation calls, live message receipts, and exact child input IDs. Older relays can be matched by unique exact-content digests without retaining prompts; repeated identical or overlapping deliveries are labeled unavailable/shared rather than guessed from agent identity or timestamps. No raw delivery prompts enter plugin storage or browser projections. **View output** opens a captured, redacted `.out`-named artifact in the sidebar, including stdout and stderr, without requiring shell redirection or creating files in your project. No AI is used to interpret test output.
-
-Direct Node test, Jest/Vitest, pytest, .NET `dotnet test`, Maven `test`/`verify`, and Gradle `test` invocations are recognized. Common Node/Python, .NET and Maven console summaries are parsed deterministically. A Gradle build-success message alone is not a parsed test result. Test and check commands at the end of a top-level `&&` chain, and as the first pipeline component before a pipe or `2>&1` redirection, are recognized. Piped runs are recorded so they do not appear as `Test runs (0)`, but a piped result never certifies changed files. Direct check commands (`npm run check`/`lint`/`typecheck`/`format:check`, `prettier --check`, `tsc --noEmit`, `eslint`, `node --check`) and delegated check rollups are recognized; custom wrappers, other compound shell forms, and automatic discovery of XML report files are not supported yet.
-
-Captures are bounded to 500,000 characters per run and 200 records / 10,000,000 output characters overall. Older captures may be evicted. Truncated, lost, interrupted, and unavailable output is labeled explicitly; output predating capture cannot be recovered automatically. Background capture requires the host jobs service and uses an independent, non-consuming output cursor. A capture restored without its live producer is marked interrupted rather than left running indefinitely.
+- **Test runs** stay on their card in a collapsed disclosure, newest first, titled by the command rather than an execution ID. Parsed pass/fail/skip counts are shown when available. A changed card with no recognized test run shows an explicit `Test runs (0)` gap.
+- **Checks** are separate from tests and never certify changed files. `npm run check` / `lint` / `typecheck` / `format:check`, `prettier --check`, `tsc --noEmit`, `eslint`, and `node --check` appear in a collapsed **Checks** section.
+- **Piped commands** are captured when the test or check is the first pipeline component, so `npm test 2>&1 | tail` no longer looks like no run happened. Piped results never verify changes because the pipeline exit code belongs to the filter command.
+- **Delegated work** is grouped into one collapsed **Subtasks** section between Test runs and Changes. Exact assignment evidence wins; otherwise the observed session relationship and timestamps place child cards under the nearest parent outcome card. Reused children follow their later parent assignments.
+- **Delegation evidence** uses accepted calls, live message receipts, and exact child input IDs. Empty follow-up rows are suppressed when the child outcome is already visible, while unresolved delivered follow-ups say **Awaiting child evidence**. Parent fallback file labels resolve to the matching child card's Review entry.
+- **Coverage limits** remain explicit: direct Node, Jest/Vitest, pytest, .NET, Maven, and Gradle test commands are recognized, along with the checks above and a trailing top-level `&&` or supported pipeline. Custom wrappers, other compound shell forms, and automatic XML report discovery are not supported yet. Captured output is bounded and evicted over time.
 
 ## Quick start
 
@@ -86,11 +84,17 @@ For a local checkout and development installation, see the [development guide](d
 1. Follow any DSH restart prompt, then refresh the existing page.
 2. Open **What changed** from the conversation header or right-sidebar guide.
 3. In **Settings → Summaries**, choose a model or **Off** for factual cards only.
-4. Expand **Changes** and click a file to inspect its native Review.
+4. Expand **Test runs**, **Checks**, or **Subtasks** for evidence, and **Changes** to open a file's native Review.
 
 **Summaries are enabled by default and initially follow each originating agent's model. They can incur provider usage and send bounded, redacted code excerpts to that provider.** Choose **Off** to disable model requests. Turning summaries off does not stop local evidence collection or caching.
 
 Model effort, path rules, agent tools, update/uninstall instructions, and runtime reload details are in the [feature and configuration reference](docs/REFERENCE.md).
+
+## Troubleshooting
+
+### The “What changed” panel is empty
+
+The panel is session-scoped. The authoritative history is the DSH session log under `~/.dsh/sessions/`; the sidebar projection and caches live under `~/.dsh/storages/agent_activity_intelligence/cache/`. A page refresh reloads the browser client only. After changing or reinstalling host code, restart the existing DSH process so the projection can replay the session log. Do not delete the cache directory casually: summaries and captured artifacts may not be reconstructible.
 
 ## Privacy and limits
 
@@ -98,10 +102,10 @@ Model effort, path rules, agent tools, update/uninstall instructions, and runtim
 - Plugin storage includes sanitized metadata, validated narratives, bounded redacted test-output artifacts, and bounded, redacted whole-file snapshots captured from successful authorized edit/write results. Sensitive paths are excluded; no extra filesystem reads are made for snapshot capture.
 - Secret filtering is **best-effort**, not a guarantee. Native Review is DSH's own viewer and may show unredacted source under DSH's normal access rules.
 - This is an **activity feed, not a security audit or enforcement system**. Shell reads, MCP operations, nested PTC dispatches, remote agents, external processes, and background tests do not have complete semantic coverage. An empty feed is not proof that no sensitive access occurred.
-- Test results describe observed commands, not exhaustive coverage or correctness. Historical sessions must be loaded/observed; the feed is not an exhaustive history scan.
+- Test and check results describe observed commands, not exhaustive coverage or correctness. Historical sessions must be loaded/observed; the feed is not an exhaustive history scan.
 - The plugin cannot approve tools, weaken permissions, or modify project files. Aggregated-feed RPC access is restricted to authenticated profile-owner callers.
 
-Turning summaries off does not stop local evidence collection or caching. Clicking native Review does not send additional code to the summary model. Main controls are bilingual; some deterministic evidence labels and fallback narratives remain English.
+Clicking native Review does not send additional code to the summary model. Main controls are bilingual; some deterministic evidence labels and fallback narratives remain English.
 
 See [Privacy and evidence boundaries](docs/PRIVACY.md) for redaction, retention, capture limits, and verification caveats.
 

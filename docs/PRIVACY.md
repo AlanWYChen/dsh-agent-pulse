@@ -62,7 +62,7 @@ There is one active summary request and a queue capped at 64. The default cancel
 
 Supported foreground commands use numeric Node TAP/spec, pytest, Vitest, and Jest summaries. Successful exit alone never supplies a pass count. Selected tests are partial when their scope cannot be mapped to every changed file. Later modifications stale earlier verification.
 
-Composite shell commands, pipes, redirects, watch-mode tests, background jobs, unrecognized runners, and truncated output cannot establish successful foreground verification. DSH's foreground renderer emits an exit-code marker only for nonzero exits; a numeric supported summary without failure, stop, timeout, background, or truncation markers is treated as its successful completion case.
+Piped or redirected test/check runs may be recorded as execution history when the test/check is the first pipeline component, but they never establish successful foreground verification. Other composite shell commands, watch-mode tests, background jobs, unrecognized runners, and truncated output also cannot establish verification. DSH's foreground renderer emits an exit-code marker only for nonzero exits; a numeric supported summary without failure, stop, timeout, background, or truncation markers is treated as its successful completion case.
 
 Observed results describe commands that ran. They do not guarantee exhaustive coverage or correctness. Recorded workspace changes under concurrent agents have uncertain attribution. Net-zero and formatter-only edits can still produce direct-tool modification cards.
 
