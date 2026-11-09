@@ -1,3 +1,5 @@
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { z } from 'zod';
 import {
   initState,
@@ -84,6 +86,7 @@ export async function apply(ctx, config) {
     table: domain.table('cache'),
     config,
     jobs: ctx.get('jobs'),
+    outputDir: join(tmpdir(), 'dsh-agent-activity-output'),
     onChanged: (id) => {
       const session = ctx.sessions.get(id);
       if (session) {
@@ -149,7 +152,7 @@ export async function apply(ctx, config) {
 
   ctx.sessionProjections.register({
     key: PROJECTION_KEY,
-    stateVersion: 6,
+    stateVersion: 8,
     stateSchema: z.json(),
     init: initState,
     apply: (state, event) => reduceEvent(state, event, config),
@@ -244,6 +247,7 @@ export async function apply(ctx, config) {
                     name: artifact.name,
                     complete: artifact.complete,
                     truncated: artifact.truncated,
+                    ...(artifact.path ? { path: artifact.path } : {}),
                   },
                 };
               }),

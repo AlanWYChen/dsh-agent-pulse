@@ -17,6 +17,8 @@ Whole-file versions are captured only from successful canonical edit/write resul
 
 These local snapshots are not automatically sent whole to the model. Raw assistant messages, commands, and complete shell output are not duplicated into plugin storage. Workspace comparisons are process-local DSH evidence; the plugin caches their sanitized metadata rather than their contents.
 
+Test output is also materialized as a private 0600 `.out` file under the OS temp directory for DSH's native file viewer. The file is regenerated on restart and removed when its cached artifact is evicted.
+
 Aggregation covers sessions observed by the plugin, with up to 200 cached session snapshots. By default, up to 100 cards per session and 500 summary records are retained. Unopened historical sessions may have no feed until DSH loads/replays them. Cached child cards are labeled historical. Disable/uninstall removes runtime contributions but may leave plugin-owned data in DSH domain storage.
 
 ## What the summary provider receives
@@ -62,7 +64,7 @@ There is one active summary request and a queue capped at 64. The default cancel
 
 Supported foreground commands use numeric Node TAP/spec, pytest, Vitest, and Jest summaries. Successful exit alone never supplies a pass count. Selected tests are partial when their scope cannot be mapped to every changed file. Later modifications stale earlier verification.
 
-Piped or redirected test/check runs may be recorded as execution history when the test/check is the first pipeline component, but they never establish successful foreground verification. Other composite shell commands, watch-mode tests, background jobs, unrecognized runners, and truncated output also cannot establish verification. DSH's foreground renderer emits an exit-code marker only for nonzero exits; a numeric supported summary without failure, stop, timeout, background, or truncation markers is treated as its successful completion case.
+Piped or redirected test/check runs, and top-level `;` chains whose every segment is a recognized test/check, may be recorded as execution history. They never establish successful foreground verification because the chain exit status belongs to its final command. Other composite shell commands, watch-mode tests, background jobs, unrecognized runners, and truncated output also cannot establish verification. DSH's foreground renderer emits an exit-code marker only for nonzero exits; a numeric supported summary without failure, stop, timeout, background, or truncation markers is treated as its successful completion case.
 
 Observed results describe commands that ran. They do not guarantee exhaustive coverage or correctness. Recorded workspace changes under concurrent agents have uncertain attribution. Net-zero and formatter-only edits can still produce direct-tool modification cards.
 

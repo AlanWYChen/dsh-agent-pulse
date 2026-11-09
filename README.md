@@ -48,12 +48,12 @@ The implementation separates evidence projection ([src/engine.js](src/engine.js)
 
 ### Test runs, checks, and delegated work
 
-- **Test runs** stay on their card in a collapsed disclosure, newest first, titled by the command rather than an execution ID. Parsed pass/fail/skip counts are shown when available. A changed card with no recognized test run shows an explicit `Test runs (0)` gap.
-- **Checks** are separate from tests and never certify changed files. `npm run check` / `lint` / `typecheck` / `format:check`, `prettier --check`, `tsc --noEmit`, `eslint`, and `node --check` appear in a collapsed **Checks** section.
-- **Piped commands** are captured when the test or check is the first pipeline component, so `npm test 2>&1 | tail` no longer looks like no run happened. Piped results never verify changes because the pipeline exit code belongs to the filter command.
+- **Test runs** stay on their card in a collapsed disclosure, newest first, titled by the command rather than an execution ID. Each run is a timestamped sub-card with its command, result, parsed pass/fail/skip counts, and output link; outputs open in DSH's native file viewer. A run in a later turn creates its own turn card instead of being appended to an older one. A changed card with no recognized test run shows an explicit `Test runs (0)` gap.
+- **Checks** are separate from tests and never certify changed files. `npm run check` / `lint` / `typecheck` / `format:check` / `test:package`, `prettier --check`, `tsc --noEmit`, `eslint`, and `node --check` appear in a collapsed **Checks** section.
+- **Piped and compound commands** are captured as execution history: a test/check at the start of a pipeline, and a top-level `;` chain where every segment is a recognized test/check, so a verification command no longer looks like no run happened. Piped and compound results never verify changes because the chain's exit status belongs to its final command.
 - **Delegated work** is grouped into one collapsed **Subtasks** section between Test runs and Changes. Exact assignment evidence wins; otherwise the observed session relationship and timestamps place child cards under the nearest parent outcome card. Reused children follow their later parent assignments.
 - **Delegation evidence** uses accepted calls, live message receipts, and exact child input IDs. Empty follow-up rows are suppressed when the child outcome is already visible, while unresolved delivered follow-ups say **Awaiting child evidence**. Parent fallback file labels resolve to the matching child card's Review entry.
-- **Coverage limits** remain explicit: direct Node, Jest/Vitest, pytest, .NET, Maven, and Gradle test commands are recognized, along with the checks above and a trailing top-level `&&` or supported pipeline. Custom wrappers, other compound shell forms, and automatic XML report discovery are not supported yet. Captured output is bounded and evicted over time.
+- **Coverage limits** remain explicit: direct Node, Jest/Vitest, pytest, .NET, Maven, and Gradle test commands are recognized, along with the checks above, a trailing top-level `&&`, a supported pipeline, and an all-recognized top-level `;` chain. Custom wrappers, other compound shell forms, and automatic XML report discovery are not supported yet. Captured output is bounded and evicted over time.
 
 ## Quick start
 
@@ -99,7 +99,7 @@ The panel is session-scoped. The authoritative history is the DSH session log un
 ## Privacy and limits
 
 - **AI summaries send code excerpts to your selected provider.** Inputs are bounded and redacted, not metadata-only. Choose **Off** if those excerpts must not leave your machine.
-- Plugin storage includes sanitized metadata, validated narratives, bounded redacted test-output artifacts, and bounded, redacted whole-file snapshots captured from successful authorized edit/write results. Sensitive paths are excluded; no extra filesystem reads are made for snapshot capture.
+- Plugin storage includes sanitized metadata, validated narratives, bounded redacted test-output artifacts, and bounded, redacted whole-file snapshots captured from successful authorized edit/write results. Sensitive paths are excluded; no extra filesystem reads are made for snapshot capture. The native output viewer uses a private 0600 `.out` copy under the OS temp directory, regenerated on restart and removed with its cached artifact.
 - Secret filtering is **best-effort**, not a guarantee. Native Review is DSH's own viewer and may show unredacted source under DSH's normal access rules.
 - This is an **activity feed, not a security audit or enforcement system**. Shell reads, MCP operations, nested PTC dispatches, remote agents, external processes, and background tests do not have complete semantic coverage. An empty feed is not proof that no sensitive access occurred.
 - Test and check results describe observed commands, not exhaustive coverage or correctness. Historical sessions must be loaded/observed; the feed is not an exhaustive history scan.

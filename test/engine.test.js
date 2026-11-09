@@ -292,25 +292,36 @@ test('only supported exact commands; unknown shell text cannot create verificati
 
 test('test-only follow-up records partial counts unless exact scope maps to all changed files', () => {
   const f = fixture();
+  const turnCard = (id) => f.state.cards.find((card) => card.id === id);
+  const testRunsOn = (id) => turnCard(id)?.testRuns?.length || 0;
 
   edit(f);
   run(f, 'node --test other.test.js', tap, { turn: 2 });
 
-  assert.equal(outcome(f).verification.status, 'partial');
-  assert.match(outcome(f).verification.label, /3 selected tests passed/);
+  const partialTurn = turnCard('outcome:2');
+  assert.equal(partialTurn.verification.status, 'partial');
+  assert.match(partialTurn.verification.label, /3 selected tests passed/);
+  assert.equal(partialTurn.testRuns.length, 1);
+  assert.equal(testRunsOn('outcome:1'), 0);
 
   run(f, 'node --test engine.test.js', tap, { turn: 3 });
 
-  assert.equal(outcome(f).verification.status, 'passed');
+  const coveredTurn = turnCard('outcome:3');
+  assert.equal(coveredTurn.verification.status, 'passed');
+  assert.equal(coveredTurn.testRuns.length, 1);
+  assert.equal(testRunsOn('outcome:1'), 0);
 
   edit(f, 'view.js', { turn: 4 });
 
-  const latest = f.state.cards.at(-1);
-
   run(f, 'node --test engine.test.js', tap, { turn: 5 });
 
-  assert.notEqual(latest.id, outcome(f).id);
-  assert.equal(f.state.cards.at(-1).verification.status, 'partial');
+  const latest = f.state.cards.at(-1);
+  assert.equal(latest.id, 'outcome:5');
+  assert.equal(latest.verification.status, 'partial');
+  assert.match(latest.verification.label, /3 selected tests passed/);
+  assert.equal(latest.testRuns.length, 1);
+  assert.equal(testRunsOn('outcome:4'), 0);
+  assert.equal(testRunsOn('outcome:1'), 0);
 });
 
 test('later writes stale earlier tests, including tests before first write', () => {

@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import path from 'node:path';
+import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { isSensitivePath, redactText } from './change-context.js';
 import { testCommand } from './engine.js';
 
@@ -195,6 +196,7 @@ export class RecordedTestOutputs {
     maxChars = 500000,
     maxRecords = 200,
     maxTotalChars = 10000000,
+    outputDir = null,
   }) {
     Object.assign(this, {
       table,
@@ -204,8 +206,10 @@ export class RecordedTestOutputs {
       maxChars,
       maxRecords,
       maxTotalChars,
+      outputDir,
     });
     this.records = new Map();
+    this.paths = new Map();
     this.running = new Map();
     this.pending = Promise.resolve();
     this.dirty = new Set();
@@ -233,6 +237,10 @@ export class RecordedTestOutputs {
             'Live capture could not reconnect after restoration; terminal result is unknown.';
         }
         this.bound(record);
+        if (this.outputDir) {
+          record.path = this.artifactPath(record.name, key);
+          this.paths.set(key, record.path);
+        } else delete record.path;
         this.records.set(key, record);
         this.persisted.add(key);
         this.queue(key);
@@ -252,6 +260,34 @@ export class RecordedTestOutputs {
     return `testOutput_${createHash('sha256')
       .update(JSON.stringify([owner, callId]))
       .digest('hex')}`;
+  }
+  artifactPath(name, key) {
+    const safe =
+      typeof name === 'string' && /^[A-Za-z0-9._-]+\.out$/.test(name)
+        ? name
+        : `${key}.out`;
+    return path.join(this.outputDir, safe);
+  }
+  artifactText(record) {
+    const lines = [
+      `$ ${record.command}`,
+      `${record.status}${record.exitCode != null ? ` · exitCode: ${record.exitCode}` : ''}`,
+      '',
+      'stdout:',
+      record.stdout,
+    ];
+    if (record.stderr) lines.push('', 'stderr:', record.stderr);
+    return lines.join('\n');
+  }
+  async writeArtifact(file, record) {
+    if (!file) return;
+    await mkdir(this.outputDir, { recursive: true, mode: 0o700 });
+    await writeFile(file, this.artifactText(record), { mode: 0o600 });
+  }
+  async removeArtifact(key) {
+    const file = this.paths.get(key);
+    this.paths.delete(key);
+    if (file) await rm(file, { force: true });
   }
   queue(key) {
     // One in-flight snapshot plus one dirty identity per retained/persisted record.
@@ -277,10 +313,20 @@ export class RecordedTestOutputs {
           if (record) {
             await this.table.put(next, structuredClone(record));
             this.persisted.add(next);
+            try {
+              await this.writeArtifact(this.paths.get(next), record);
+            } catch {
+              this.persistenceFailed = true;
+            }
             if (!this.records.has(next)) this.dirty.add(next);
           } else {
             await this.table.delete(next);
             this.persisted.delete(next);
+            try {
+              await this.removeArtifact(next);
+            } catch {
+              this.persistenceFailed = true;
+            }
           }
         } catch {
           this.persistenceFailed = true;
@@ -306,6 +352,10 @@ export class RecordedTestOutputs {
   }
   save(key, record) {
     this.bound(record);
+    if (this.outputDir) {
+      record.path = this.artifactPath(record.name, key);
+      this.paths.set(key, record.path);
+    } else delete record.path;
     this.records.set(key, record);
     this.queue(key);
     this.trim();

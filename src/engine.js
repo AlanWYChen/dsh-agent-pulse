@@ -40,7 +40,7 @@ const safePattern = (pattern, value) => {
 
 export function initState(header = {}, inheritedEventCount = 0) {
   return {
-    version: 6,
+    version: 8,
     agentId: String(header.agentId ?? header.id ?? header.sessionId ?? 'agent'),
     sessionId: String(header.sessionId ?? header.id ?? 'agent'),
     origin: typeof header.origin === 'string' ? header.origin : null,
@@ -102,6 +102,15 @@ function parseArgs(value) {
 // Only direct known test/check invocations are eligible, never echoed strings or
 // arbitrary scripts. A trailing top-level && chain may end in a pipeline; the
 // first pipeline component is the command candidate.
+const ENV_ASSIGNMENT =
+  /^[A-Za-z_][A-Za-z0-9_]*=(?:"[^"]*"|'[^']*'|[^\s;&|<>()$`]+)\s+/;
+
+function stripEnvAssignments(command) {
+  let rest = command.trim();
+  while (ENV_ASSIGNMENT.test(rest)) rest = rest.replace(ENV_ASSIGNMENT, '');
+  return rest.trim();
+}
+
 function captureCommand(command) {
   if (typeof command !== 'string' || /[;`\n]|\$\(/.test(command)) return null;
 
@@ -170,12 +179,47 @@ function captureCommand(command) {
   if (parts.some((value) => !value.trim())) return null;
   if (parts.slice(1).some((value) => /[<>]/.test(value))) return null;
 
-  const candidate = parts[0]
-    .trim()
-    .replace(/\s*2>&1\s*$/, '')
-    .trim();
-  if (!candidate || /[<>]/.test(candidate)) return null;
+  const candidate = stripEnvAssignments(
+    parts[0].trim().replace(/\s*2>&1\s*$/, ''),
+  );
+  if (!candidate || /[<>;`\n]|\$\(/.test(candidate)) return null;
   return { final: candidate, piped: parts.length > 1 };
+}
+
+// A compound command is eligible only when every top-level segment is a
+// directly recognized test or check. It is captured as history, never as
+// certification: the chain's exit status belongs to its final command.
+function splitTopLevelSemicolons(command) {
+  if (typeof command !== 'string' || /[`\n]|\$\(/.test(command)) return null;
+
+  const segments = [];
+  let segment = '';
+  let quote = null;
+  for (let i = 0; i < command.length; i++) {
+    const char = command[i];
+    if (quote) {
+      segment += char;
+      if (char === quote) quote = null;
+      continue;
+    }
+    if (char === '"' || char === "'") {
+      quote = char;
+      segment += char;
+      continue;
+    }
+    if (char === ';') {
+      if (command[i + 1] === ';') return null;
+      segments.push(segment);
+      segment = '';
+      continue;
+    }
+    segment += char;
+  }
+  if (quote) return null;
+  segments.push(segment);
+  if (segments.length < 2 || segments.some((value) => !value.trim()))
+    return null;
+  return segments;
 }
 
 function commandWords(command) {
@@ -296,7 +340,7 @@ export function checkCommand(command, args = {}) {
   if (
     /^(?:npm|pnpm|yarn|bun)$/.test(pm) &&
     words[1] === 'run' &&
-    /^(?:check|lint|typecheck|format:check)$/.test(words[2])
+    /^(?:check|lint|typecheck|format:check|test:package)$/.test(words[2])
   ) {
     label = `${pm} run ${words[2]}`;
     targets = targetsFrom(3);
@@ -332,6 +376,37 @@ export function checkCommand(command, args = {}) {
     all: targets.length === 0,
     ...(capture.piped ? { piped: true } : {}),
   };
+}
+
+export function commandRuns(command) {
+  const segments = splitTopLevelSemicolons(command);
+  if (!segments) return null;
+
+  const runs = [];
+  for (const segment of segments) {
+    const test = testCommand(segment);
+    if (test) {
+      runs.push({
+        kind: 'test',
+        test,
+        label: test.label,
+        piped: Boolean(test.piped),
+      });
+      continue;
+    }
+    const check = checkCommand(segment);
+    if (check) {
+      runs.push({
+        kind: 'check',
+        check,
+        label: check.label,
+        piped: Boolean(check.piped),
+      });
+      continue;
+    }
+    return null;
+  }
+  return runs;
 }
 
 function semanticHints(source) {
@@ -428,6 +503,15 @@ function callMetadata(event, config, state) {
     };
 
   if (name === 'bash') {
+    const runs = commandRuns(a.command);
+    if (runs)
+      return {
+        kind: 'compound',
+        turn: d.turn ?? null,
+        files: [],
+        runs,
+        background: Boolean(a.run_in_background),
+      };
     const test = testCommand(a.command, a);
     if (test)
       return {
@@ -622,11 +706,7 @@ function testResult(result, text) {
       label: `Tests failed${counts.found ? ` (${counts.pass} passed, ${counts.fail} failed)` : ''}`,
     };
 
-  if (
-    /(?:running in (?:the )?background|background job|job[_ ]id|\[still running)/i.test(
-      text,
-    )
-  )
+  if (/(?:running in (?:the )?background|\[still running)/i.test(text))
     return {
       status: 'pending',
       label: 'Background test started; no foreground result',
@@ -651,6 +731,14 @@ function testResult(result, text) {
       label: `Tests passed (${counts.pass} passed, 0 failed)`,
     };
 
+  // Passing test names are prose. Only fall back to a generic background
+  // mention when no numeric foreground summary establishes completion.
+  if (/(?:background job|job[_ ]id)/i.test(text))
+    return {
+      status: 'pending',
+      label: 'Background test started; no foreground result',
+    };
+
   return { status: 'unknown', label: 'No conclusive foreground test result' };
 }
 
@@ -662,9 +750,7 @@ export function historyResult(
 ) {
   if (
     !completed &&
-    /(?:running in (?:the )?background|background job|job[_ ]id|\[still running)/i.test(
-      text,
-    )
+    /(?:running in (?:the )?background|\[still running)/i.test(text)
   )
     return {
       executionStatus: 'running',
@@ -712,6 +798,23 @@ export function historyResult(
     (numeric.found || skipFound
       ? { passed: numeric.pass, failed: numeric.fail, skipped }
       : null);
+  const conclusivePass = Boolean(
+    counts && counts.passed > 0 && counts.failed === 0,
+  );
+  // A generic background mention is prose unless no numeric foreground summary
+  // establishes that the command completed.
+  if (
+    !completed &&
+    !conclusivePass &&
+    /(?:background job|job[_ ]id)/i.test(text)
+  )
+    return {
+      executionStatus: 'running',
+      resultStatus: 'unknown',
+      counts: null,
+      exitCode: null,
+      ...(piped ? { piped: true } : {}),
+    };
   if (piped)
     return {
       executionStatus: 'completed',
@@ -740,17 +843,14 @@ export function historyResult(
 }
 
 function historyCard(state, event, turn, kind = 'test') {
-  let card =
-    state.cards.find((c) => c.id === `outcome:${String(turn ?? 'unknown')}`) ||
-    state.cards.find((c) => c.id === state.lastOutcomeId);
+  const id = `outcome:${String(turn ?? 'unknown')}`;
+  let card = state.cards.find((c) => c.id === id);
+  // The last-outcome fallback is only for runs with no turn. Reusing it for a
+  // known later turn would move that turn's evidence onto an older card.
+  if (!card && turn == null)
+    card = state.cards.find((c) => c.id === state.lastOutcomeId);
   if (!card) {
-    card = baseCard(
-      state,
-      event,
-      `outcome:${String(turn ?? 'unknown')}`,
-      'outcome',
-      [],
-    );
+    card = baseCard(state, event, id, 'outcome', []);
     if (kind === 'check') {
       card.title = 'Checks';
       card.summary =
@@ -1021,6 +1121,12 @@ export function reduceEvent(state, event, config = {}) {
     const key = data.callId;
     if (state.pending[key] || state.completed.includes(key)) return state;
 
+    if (metadata.kind === 'compound')
+      metadata.runs = metadata.runs.map((run, index) => ({
+        ...run,
+        id: `${key}#${index + 1}`,
+      }));
+
     const pending = {
       ...state.pending,
       [key]: { ...metadata, callSeq: event.seq },
@@ -1085,6 +1191,27 @@ export function reduceEvent(state, event, config = {}) {
         },
         ...(card.checkRuns || []),
       ];
+    } else if (metadata.kind === 'compound') {
+      const card = historyCard({ ...state, cards }, event, metadata.turn);
+      for (const run of metadata.runs) {
+        const entry = {
+          id: run.id,
+          callSeq: event.seq,
+          resultSeq: null,
+          executionStatus: 'running',
+          resultStatus: 'unknown',
+          counts: null,
+          exitCode: null,
+          agentId: state.agentId,
+          sessionId: state.sessionId,
+          label: run.label,
+          compound: true,
+          ...(run.piped ? { piped: true } : {}),
+        };
+        if (run.kind === 'test')
+          card.testRuns = [...(card.testRuns || []), entry];
+        else card.checkRuns = [...(card.checkRuns || []), entry];
+      }
     }
     return {
       ...state,
@@ -1107,6 +1234,30 @@ export function reduceEvent(state, event, config = {}) {
 
   const text = textOf(data),
     failed = toolFailed(data, text);
+
+  if (call.kind === 'compound') {
+    for (const run of call.runs || []) {
+      const list = run.kind === 'test' ? 'testRuns' : 'checkRuns';
+      const owner = next.cards.find((card) =>
+        (card[list] || []).some((item) => item.id === run.id),
+      );
+      if (!owner) continue;
+      owner[list] = owner[list].map((item) =>
+        item.id === run.id
+          ? {
+              ...item,
+              resultSeq: event.seq,
+              executionStatus: failed ? 'incomplete' : 'completed',
+              resultStatus: 'unknown',
+              counts: null,
+              exitCode: null,
+              compound: true,
+            }
+          : item,
+      );
+    }
+    return next;
+  }
 
   if (call.kind === 'delegation') {
     const ack = text
@@ -1288,11 +1439,17 @@ export function reduceEvent(state, event, config = {}) {
       next.cards.find(
         (x) => x.id === `outcome:${String(call.turn ?? 'unknown')}`,
       ) || next.cards.find((x) => x.id === next.lastOutcomeId);
+    // A test-only follow-up lives on its own turn card, but its scope is the
+    // most recent card that actually changed files.
+    const scopeCard =
+      card && (card.files?.length || card._editSeq != null)
+        ? card
+        : next.cards.find((x) => x.id === next.lastOutcomeId) || card;
 
-    if (card && scopeSupports(call.test, card.files)) {
+    if (card && scopeCard && scopeSupports(call.test, scopeCard.files)) {
       // A test started before the last write cannot verify that write.
       card.verification =
-        call.callSeq < card._editSeq
+        call.callSeq < scopeCard._editSeq
           ? { status: 'stale', label: 'Files changed after this test started' }
           : verification;
       addEvidence(
@@ -1304,7 +1461,7 @@ export function reduceEvent(state, event, config = {}) {
       );
     } else if (card && verification.status === 'passed') {
       card.verification =
-        call.callSeq < card._editSeq
+        scopeCard && call.callSeq < scopeCard._editSeq
           ? { status: 'stale', label: 'Files changed after this test started' }
           : {
               status: 'partial',

@@ -189,7 +189,7 @@ window.__ModuleLoader__.load({
       noLines: '暂无可用的行级变更。',
     });
 
-    const css = `.aai-root{box-sizing:border-box;height:100%;min-height:0;display:flex;flex-direction:column;color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;line-height:1.5}.aai-root *{box-sizing:border-box}.aai-header{padding:14px 16px 10px;border-bottom:1px solid var(--dsw-alias-border-l1)}.aai-header h2{font-size:14px;margin:0 0 4px}.aai-muted{color:var(--dsw-alias-label-secondary);font-size:12px}.aai-filters{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px}.aai-button{font:inherit;color:var(--dsw-alias-label-secondary);background:transparent;border:1px solid var(--dsw-alias-border-l1);border-radius:6px;padding:4px 8px;cursor:pointer}.aai-button:hover,.aai-button[aria-pressed=true]{background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary)}.aai-button:focus-visible,.aai-root summary:focus-visible{outline:2px solid var(--dsw-alias-label-primary);outline-offset:2px}.aai-scroll{padding:12px;overflow:auto;min-height:0;flex:1}.aai-card{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:12px;margin-bottom:10px;overflow-wrap:anywhere}.aai-card h3{font-size:13px;margin:5px 0}.aai-card p{margin:5px 0;white-space:pre-wrap}.aai-meta{display:flex;gap:8px;flex-wrap:wrap;color:var(--dsw-alias-label-secondary);font-size:11px}.aai-card details{margin-top:10px;border-top:1px solid var(--dsw-alias-border-l1);padding-top:8px}.aai-card summary{cursor:pointer}.aai-card ul{padding-left:20px;margin:6px 0}.aai-empty{padding:28px 12px;color:var(--dsw-alias-label-secondary);text-align:center}.aai-notice{padding:8px 0}.aai-trigger{white-space:nowrap;font-size:12px}.aai-code{font-family:monospace;font-size:12px}.aai-model{margin-top:10px}.aai-model label{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.aai-model-select{font:inherit;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-layer-2);border:1px solid var(--dsw-alias-border-l1);border-radius:6px;padding:4px 8px;max-width:100%;min-width:0}.aai-model-select:focus-visible{outline:2px solid var(--dsw-alias-label-primary);outline-offset:2px}.aai-model-select:disabled{cursor:wait;opacity:.65}.aai-subtasks>.aai-subtask{padding-left:8px}.aai-card details.aai-subtask{border-top:0;padding-top:0;margin-top:0}.aai-subtask>summary{display:none}`;
+    const css = `.aai-root{box-sizing:border-box;height:100%;min-height:0;display:flex;flex-direction:column;color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;line-height:1.5}.aai-root *{box-sizing:border-box}.aai-header{padding:14px 16px 10px;border-bottom:1px solid var(--dsw-alias-border-l1)}.aai-header h2{font-size:14px;margin:0 0 4px}.aai-muted{color:var(--dsw-alias-label-secondary);font-size:12px}.aai-filters{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px}.aai-button{font:inherit;color:var(--dsw-alias-label-secondary);background:transparent;border:1px solid var(--dsw-alias-border-l1);border-radius:6px;padding:4px 8px;cursor:pointer}.aai-button:hover,.aai-button[aria-pressed=true]{background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary)}.aai-button:focus-visible,.aai-root summary:focus-visible{outline:2px solid var(--dsw-alias-label-primary);outline-offset:2px}.aai-scroll{padding:12px;overflow:auto;min-height:0;flex:1}.aai-card{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:12px;margin-bottom:10px;overflow-wrap:anywhere}.aai-card h3{font-size:13px;margin:5px 0}.aai-card p{margin:5px 0;white-space:pre-wrap}.aai-meta{display:flex;gap:8px;flex-wrap:wrap;color:var(--dsw-alias-label-secondary);font-size:11px}.aai-card details{margin-top:10px;border-top:1px solid var(--dsw-alias-border-l1);padding-top:8px}.aai-card summary{cursor:pointer}.aai-card ul{padding-left:20px;margin:6px 0}.aai-empty{padding:28px 12px;color:var(--dsw-alias-label-secondary);text-align:center}.aai-notice{padding:8px 0}.aai-trigger{white-space:nowrap;font-size:12px}.aai-code{font-family:monospace;font-size:12px}.aai-model{margin-top:10px}.aai-model label{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.aai-model-select{font:inherit;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-layer-2);border:1px solid var(--dsw-alias-border-l1);border-radius:6px;padding:4px 8px;max-width:100%;min-width:0}.aai-model-select:focus-visible{outline:2px solid var(--dsw-alias-label-primary);outline-offset:2px}.aai-model-select:disabled{cursor:wait;opacity:.65}.aai-subtasks>.aai-subtask{padding-left:8px}.aai-card details.aai-subtask{border-top:0;padding-top:0;margin-top:0}.aai-subtask>summary{display:none}.aai-run-list{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}.aai-run-card{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px 10px;margin:0;overflow-wrap:anywhere}.aai-run-title{font-size:13px;margin:0 0 4px;font-weight:600}.aai-run-counts{margin-top:4px}.aai-run-meta{margin-top:4px;color:var(--dsw-alias-label-secondary);font-size:12px}.aai-run-card .aai-button{margin-top:6px}.aai-subtasks>.aai-subtask:first-of-type{margin-top:8px}`;
 
     const OUTPUT_ID = ID + '/test-output';
     function outputAddress(sessionId, callId) {
@@ -203,6 +203,26 @@ window.__ModuleLoader__.load({
       )
         return null;
       return `dsh-resource://activity-test-output/${encodeURIComponent(sessionId)}/${encodeURIComponent(callId)}`;
+    }
+    function nativeFileAddress(sessionId, filePath) {
+      if (
+        typeof sessionId !== 'string' ||
+        !sessionId ||
+        typeof filePath !== 'string' ||
+        !filePath ||
+        filePath.includes('\0')
+      )
+        return null;
+      const normalized = filePath.replaceAll('\\', '/');
+      return `dsh-resource://file/session/${encodeURIComponent(sessionId)}/${normalized
+        .split('/')
+        .map(encodeURIComponent)
+        .join('/')}`;
+    }
+    function runOutputAddress(sessionId, run) {
+      return run?.output?.path
+        ? nativeFileAddress(run.sessionId || sessionId, run.output.path)
+        : outputAddress(run?.sessionId || sessionId, run?.id);
     }
     function parseOutputAddress(address) {
       try {
@@ -384,6 +404,13 @@ window.__ModuleLoader__.load({
       return agent.length > 24 ? `${agent.slice(0, 8)}…` : agent;
     }
 
+    function runIdentity(id) {
+      if (typeof id !== 'string' || !id || id.length > 40 || id.includes('|'))
+        return null;
+      if (/^call[_-]/i.test(id) || /^[0-9a-f]{16,}$/i.test(id)) return null;
+      return id;
+    }
+
     function formatTime(value) {
       if (value == null) return null;
 
@@ -400,6 +427,7 @@ window.__ModuleLoader__.load({
       checks: 'Checks',
       checkRun: 'Check run',
       pipedResult: 'Completed (piped)',
+      compoundResult: 'Completed (compound)',
       outcomes: 'outcomes',
       outcome: 'outcome',
       subtask: 'Subtask',
@@ -430,6 +458,7 @@ window.__ModuleLoader__.load({
       checks: '检查',
       checkRun: '检查运行',
       pipedResult: '已完成（管道）',
+      compoundResult: '已完成（复合命令）',
       outcomes: '个结果',
       outcome: '个结果',
       subtask: '子任务',
@@ -501,6 +530,20 @@ window.__ModuleLoader__.load({
           ? (b.callSeq || 0) - (a.callSeq || 0)
           : 0;
       });
+      const statusOf = (run) =>
+        run.executionStatus === 'running'
+          ? t('testRunning')
+          : run.executionStatus === 'command-failed'
+            ? t('testCommandFailed')
+            : run.executionStatus !== 'completed'
+              ? t('testIncomplete')
+              : run.compound
+                ? t('compoundResult')
+                : run.piped && run.resultStatus === 'unknown'
+                  ? t('pipedResult')
+                  : ['passed', 'failed'].includes(run.resultStatus)
+                    ? t(run.resultStatus)
+                    : t('testUnparsed');
       return h(
         'details',
         {
@@ -511,63 +554,50 @@ window.__ModuleLoader__.load({
         h('summary', null, `${t('testHistory')} (${ordered.length})`),
         h(
           'ol',
-          null,
+          { className: 'aai-run-list' },
           ordered.map((run, index) => {
-            const label =
-              run.executionStatus === 'running'
-                ? t('testRunning')
-                : run.executionStatus === 'command-failed'
-                  ? t('testCommandFailed')
-                  : run.executionStatus !== 'completed'
-                    ? t('testIncomplete')
-                    : run.piped && run.resultStatus === 'unknown'
-                      ? t('pipedResult')
-                      : ['passed', 'failed'].includes(run.resultStatus)
-                        ? t(run.resultStatus)
-                        : t('testUnparsed');
+            const address =
+              typeof openResource === 'function'
+                ? runOutputAddress(sessionId, run)
+                : null;
+            const meta = [formatTime(run.startedAt), statusOf(run)]
+              .filter(Boolean)
+              .join(' - ');
+            const counts = run.counts
+              ? ['passed', 'failed', 'skipped']
+                  .filter((key) => Number.isFinite(run.counts[key]))
+                  .map((key) => `${run.counts[key]} ${t(key)}`)
+                  .join(' ')
+              : null;
             return h(
               'li',
-              { key: run.id || index },
-              h('div', { className: 'aai-code' }, run.label || t('testRun')),
-              typeof run.id === 'string' &&
-                run.id.length <= 40 &&
-                !run.id.includes('|') &&
-                h('div', { className: 'aai-muted aai-code' }, run.id),
+              {
+                key: run.id || index,
+                className: 'aai-run-card aai-test-run',
+              },
+              h(
+                'h3',
+                { className: 'aai-run-title' },
+                run.label || t('testRun'),
+              ),
+              h('div', { className: 'aai-run-meta' }, meta),
+              runIdentity(run.id) &&
+                h(
+                  'div',
+                  { className: 'aai-muted aai-code' },
+                  runIdentity(run.id),
+                ),
+              counts && h('div', { className: 'aai-run-counts' }, counts),
               run.output &&
-                typeof openResource === 'function' &&
-                outputAddress(run.sessionId || sessionId, run.id) &&
+                address &&
                 h(
                   'button',
                   {
                     type: 'button',
                     className: 'aai-button',
-                    onClick: () =>
-                      openResource(
-                        outputAddress(run.sessionId || sessionId, run.id),
-                      ),
+                    onClick: () => openResource(address),
                   },
                   t('viewOutput'),
-                ),
-              h(
-                'div',
-                null,
-                label,
-                run.exitCode != null && ` · ${t('exitCode')}: ${run.exitCode}`,
-              ),
-              h(
-                'div',
-                { className: 'aai-muted' },
-                `${t('sourceSession')}: ${run.sessionId || sessionId}`,
-              ),
-              run.counts &&
-                h(
-                  'div',
-                  null,
-                  ['passed', 'failed', 'skipped']
-                    .filter((key) => Number.isFinite(run.counts[key]))
-                    .map((key) =>
-                      h('span', { key }, `${run.counts[key]} ${t(key)} `),
-                    ),
                 ),
             );
           }),
@@ -587,35 +617,52 @@ window.__ModuleLoader__.load({
         h('summary', null, `${t('checks')} (${runs.length})`),
         h(
           'ol',
-          null,
+          { className: 'aai-run-list' },
           runs.map((run, index) => {
-            const status = run.piped
-              ? t('pipedResult')
-              : run.executionStatus === 'running'
-                ? t('testRunning')
-                : run.executionStatus === 'command-failed'
-                  ? t('testCommandFailed')
-                  : run.executionStatus === 'incomplete'
-                    ? t('testIncomplete')
-                    : run.exitCode === 0
-                      ? t('passed')
-                      : t('testIncomplete');
+            const status = run.compound
+              ? t('compoundResult')
+              : run.piped
+                ? t('pipedResult')
+                : run.executionStatus === 'running'
+                  ? t('testRunning')
+                  : run.executionStatus === 'command-failed'
+                    ? t('testCommandFailed')
+                    : run.executionStatus === 'incomplete'
+                      ? t('testIncomplete')
+                      : run.exitCode === 0
+                        ? t('passed')
+                        : t('testIncomplete');
             const address =
               typeof openResource === 'function'
                 ? outputAddress(run.sessionId || sessionId, run.id)
                 : null;
+            const meta = [formatTime(run.startedAt), status]
+              .filter(Boolean)
+              .join(' - ');
             return h(
               'li',
-              { key: run.id || index },
-              h('div', { className: 'aai-code' }, run.label || t('checkRun')),
+              {
+                key: run.id || index,
+                className: 'aai-run-card aai-check-run',
+              },
               h(
-                'div',
-                { className: 'aai-muted' },
-                `${status} · ${t('sourceSession')}: ${run.sessionId || sessionId}`,
-                run.exitCode != null
-                  ? ` · ${t('exitCode')}: ${run.exitCode}`
-                  : '',
+                'h3',
+                { className: 'aai-run-title' },
+                run.label || t('checkRun'),
               ),
+              h('div', { className: 'aai-run-meta' }, meta),
+              runIdentity(run.id) &&
+                h(
+                  'div',
+                  { className: 'aai-muted aai-code' },
+                  runIdentity(run.id),
+                ),
+              run.exitCode != null &&
+                h(
+                  'div',
+                  { className: 'aai-run-meta' },
+                  `${t('exitCode')}: ${run.exitCode}`,
+                ),
               run.output &&
                 address &&
                 h(
