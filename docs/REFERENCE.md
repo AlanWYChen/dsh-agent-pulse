@@ -29,14 +29,14 @@
 
 ### Review and summary controls
 
-| Feature                            | Behavior                                                                                                                                                                                      |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Native Review navigation**       | Opens the exact same-session/turn/path **Review · turn N** used by DSH's **Edited N files** card, selecting the clicked file.                                                                 |
-| **Native editor experience**       | Keeps syntax colors, split/inline layout, file picker, wrapping, and editor menu. Missing native Review evidence produces an explicit error, not a substitute custom diff.                    |
-| **Recorded-content compatibility** | Previously opened custom diff tabs remain readable. Bounded, redacted recorded snapshots and validated history support these legacy previews without comparing against today's disk contents. |
-| **Summary-model selection**        | Live provider-grouped model list, **Follow chat model**, or **Off**. Saved profile-wide without changing the conversation model.                                                              |
-| **Explicit regeneration**          | **Generate summary / Refresh summary** regenerates one outcome with the selected model and consumes provider usage. Changing models does not regenerate old cards.                            |
-| **Agent tools**                    | `activity_summary_model` reads/lists/sets the summary policy. `activity_outcomes` returns bounded outcomes without raw code and can explicitly regenerate one card.                           |
+| Feature                      | Behavior                                                                                                                                                                   |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Native Review navigation** | Opens the exact same-session/turn/path **Review · turn N** used by DSH's **Edited N files** card, selecting the clicked file.                                              |
+| **Native editor experience** | Keeps syntax colors, split/inline layout, file picker, wrapping, and editor menu. Missing native Review evidence produces an explicit error, not a substitute custom diff. |
+| **No custom diff viewer**    | The plugin does not register or open a substitute diff tab. Changed-file clicks require native Review coordinates; otherwise they show an explicit error.                  |
+| **Summary-model selection**  | Live provider-grouped model list, **Follow chat model**, or **Off**. Saved profile-wide without changing the conversation model.                                           |
+| **Explicit regeneration**    | **Generate summary / Refresh summary** regenerates one outcome with the selected model and consumes provider usage. Changing models does not regenerate old cards.         |
+| **Agent tools**              | `activity_summary_model` reads/lists/sets the summary policy. `activity_outcomes` returns bounded outcomes without raw code and can explicitly regenerate one card.        |
 
 ## Configuration
 

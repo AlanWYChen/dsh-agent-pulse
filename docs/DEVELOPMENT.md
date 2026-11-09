@@ -11,7 +11,7 @@ npm run check
 npm run format:check
 ```
 
-Tests use Node's built-in test runner. `npm test` runs all root-level test files through a cross-platform enumerator; `npm run test:unit` and `npm run test:integration` run disjoint groups. New test files default to the unit group unless explicitly classified as integration. `npm run check` checks the syntax of the runtime JavaScript modules.
+Tests use Node's built-in test runner. `npm test` runs all `test/` files through a cross-platform enumerator; `npm run test:unit` and `npm run test:integration` run disjoint groups. New test files default to the unit group unless explicitly classified as integration. `npm run check` checks the syntax of the runtime JavaScript modules.
 
 `npm run test:package` verifies a real tarball in a clean consumer. `npm run test:compatibility -- /path/to/isolated-host-install` checks the real DSH public contracts. See [CI checks](CI.md) for the platform/version matrix, coverage boundaries, and local commands.
 
@@ -23,23 +23,23 @@ Runtime modules and their tests remain at the repository root to preserve existi
 
 | File                                                                      | Responsibility                                                                           |
 | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| [index.js](../index.js)                                                   | Host registration, domain storage, owner-only RPC, and agent tools.                      |
-| [engine.js](../engine.js)                                                 | Pure replayable evidence projection and claim filtering.                                 |
-| [workspace.js](../workspace.js)                                           | Conservative recorded-comparison enrichment.                                             |
-| [coordinator.js](../coordinator.js)                                       | Bounded summary queue, narrative cache, and event-driven watches.                        |
-| [model-settings.js](../model-settings.js)                                 | Persisted summary-model policy and selection tool.                                       |
-| [change-context.js](../change-context.js)                                 | Redacted model excerpts and browser evidence.                                            |
-| [recorded-files.js](../recorded-files.js)                                 | Bounded whole-file capture from successful canonical tool results.                       |
-| [full-file-context.js](../full-file-context.js)                           | Validated historical line reconstruction without disk reads.                             |
-| [unified-diff.js](../unified-diff.js)                                     | Bounded line comparison retaining unchanged context.                                     |
-| [syntax-highlight.js](../syntax-highlight.js)                             | Local text-token highlighting for legacy recorded-content previews.                      |
-| [client.js](../client.js)                                                 | Native Review navigation, legacy sidebar previews, model selection, and debug details.   |
+| [index.js](../src/index.js)                                               | Host registration, domain storage, owner-only RPC, and agent tools.                      |
+| [engine.js](../src/engine.js)                                             | Pure replayable evidence projection and claim filtering.                                 |
+| [workspace.js](../src/workspace.js)                                       | Conservative recorded-comparison enrichment.                                             |
+| [coordinator.js](../src/coordinator.js)                                   | Bounded summary queue, narrative cache, and event-driven watches.                        |
+| [model-settings.js](../src/model-settings.js)                             | Persisted summary-model policy and selection tool.                                       |
+| [change-context.js](../src/change-context.js)                             | Redacted model excerpts and browser evidence.                                            |
+| [recorded-files.js](../src/recorded-files.js)                             | Bounded whole-file capture from successful canonical tool results.                       |
+| [full-file-context.js](../src/full-file-context.js)                       | Validated historical line reconstruction without disk reads.                             |
+| [unified-diff.js](../src/unified-diff.js)                                 | Bounded line comparison retaining unchanged context.                                     |
+| [syntax-highlight.js](../src/syntax-highlight.js)                         | Local text-token highlighting for legacy recorded-content previews.                      |
+| [client.js](../src/client.js)                                             | Native Review navigation, legacy sidebar previews, model selection, and debug details.   |
 | [cordis.patch.yml](../cordis.patch.yml)                                   | Local bundle plugin-row declaration and initial configuration.                           |
 | [English locale](../locale/en.json) / [Chinese locale](../locale/zh.json) | Plugin title and description; main panel control dictionaries live in the client module. |
 
 ## Test coverage
 
-Root-level `*.test.js` files cover evidence projection, summary coordination, configuration, privacy, workspace enrichment, recorded files, historical context reconstruction, unified diffs, highlighting, client behavior, and native Review integration.
+Tests under `test/` cover evidence projection, summary coordination, configuration, privacy, workspace enrichment, recorded files, historical context reconstruction, unified diffs, highlighting, client behavior, and native Review integration.
 
 When modifying evidence or summaries, retain tests for failed/denied tools, stale or partial verification, redaction, missing historical context, and uncertain concurrent-agent attribution. Never replace missing historical evidence with a current-disk comparison.
 

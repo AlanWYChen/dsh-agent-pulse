@@ -15,7 +15,7 @@
 | Package consumer                  | Build a real tarball, verify included/excluded files, MIT metadata and bundle identity, install in a clean temporary consumer, and import the installed Host entry point. |
 | DSH public-contract compatibility | Install official DSH `0.2.1-rc.2` and `latest` independently, then check public Host contracts, real projection integration, and client dependency/export metadata.       |
 
-The current suite contains **95 unit/regression tests and 45 integration tests**. New root-level test files automatically join the unit group unless explicitly classified as integration in [the test runner](../scripts/run-tests.mjs).
+The current suite contains **335 tests** across the unit/regression and integration groups. New `test/` files automatically join the unit group unless explicitly classified as integration in [the test runner](../scripts/run-tests.mjs).
 
 ## Compatibility boundaries
 

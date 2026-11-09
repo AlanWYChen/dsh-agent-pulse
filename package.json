@@ -9,23 +9,13 @@
   "type": "module",
   "description": "Evidence-backed agent outcomes, verification gaps, and sensitive-access alerts in the DSH sidebar.",
   "exports": {
-    ".": "./index.js",
-    "./client": "./client.js",
+    ".": "./src/index.js",
+    "./client": "./src/client.js",
     "./locale/*.json": "./locale/*.json",
     "./icon": "./icon.svg"
   },
   "files": [
-    "index.js",
-    "engine.js",
-    "coordinator.js",
-    "change-context.js",
-    "syntax-highlight.js",
-    "unified-diff.js",
-    "full-file-context.js",
-    "recorded-files.js",
-    "model-settings.js",
-    "workspace.js",
-    "client.js",
+    "src/",
     "cordis.patch.yml",
     "locale/*.json",
     "icon.svg",
@@ -42,7 +32,7 @@
     "test:integration": "node scripts/run-tests.mjs integration",
     "test:package": "node scripts/check-package.mjs",
     "test:compatibility": "node scripts/check-dsh-compatibility.mjs",
-    "check": "node --check index.js && node --check engine.js && node --check coordinator.js && node --check change-context.js && node --check syntax-highlight.js && node --check unified-diff.js && node --check full-file-context.js && node --check recorded-files.js && node --check model-settings.js && node --check workspace.js && node --check client.js"
+    "check": "node --check src/index.js && node --check src/engine.js && node --check src/coordinator.js && node --check src/change-context.js && node --check src/syntax-highlight.js && node --check src/unified-diff.js && node --check src/full-file-context.js && node --check src/recorded-files.js && node --check src/model-settings.js && node --check src/workspace.js && node --check src/client.js"
   },
   "dependencies": {
     "@shikijs/core": "^4.5.0",

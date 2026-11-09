@@ -46,7 +46,7 @@ New changed-file clicks require an exact same-session/turn/path match and open D
 
 **Native Review is not a plugin-generated sanitized preview.** It follows DSH's normal file-access and display behavior, including the file picker and potentially unredacted source. The plugin does not inspect unrelated picker files or substitute a viewer based on their contents. Clicking Review does not send additional code to the summary model. Native editor actions and opening current files are deliberate user actions governed by DSH's path and desktop checks.
 
-Previously opened custom diff tabs remain readable for compatibility. Their snapshots remain redacted. Historical full context can sometimes be reconstructed from complete logged reads/writes plus exact successful edits, with newline-normalization and concurrency caveats. Incomplete edit blocks and workspace hunks are labeled partial; a write can show an after-file without claiming an unknown before-file. Missing/disposed history is unavailable rather than compared against current disk contents.
+The plugin does not register a custom diff viewer. Changed-file clicks require exact native Review coordinates; missing or disposed native history produces an explicit error rather than a substitute recorded view. Recorded snapshots remain bounded and redacted, and historical context reconstruction never compares against current disk contents.
 
 Legacy fallback highlighting runs locally after redaction and returns text tokens, never HTML. Old/new streams are highlighted separately with light/dark palettes. Limits are 5,000 rows, 200,000 characters, 50,000 tokens, and 10,000 characters per source line, with a per-line tokenizer deadline. Unsupported languages or grammar failures remain readable as plain text.
 

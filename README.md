@@ -28,22 +28,34 @@ _From 13 subagents to a readable outcome summary, then into the recorded code ch
 
 ## What you can see
 
-| Question                 | What the feed shows                                                                 |
-| ------------------------ | ----------------------------------------------------------------------------------- |
-| What changed?            | Turn-based cards with optional AI explanations of behavior changes.                 |
-| Was it tested?           | Observed test counts, partial verification, and results made stale by later edits.  |
-| What needs attention?    | Failed modifications, observed test failures, and recognized sensitive-file access. |
-| Where is the evidence?   | Changed-file links open DSH's native **Review · turn N**.                           |
-| What if the model fails? | Factual cards remain available; AI summaries can also be turned off.                |
+| Question                 | What the feed shows                                                                                  |
+| ------------------------ | ---------------------------------------------------------------------------------------------------- |
+| What changed?            | Turn-based cards with optional AI explanations of behavior changes.                                  |
+| Was it tested?           | Observed test counts, partial verification, and results made stale by later edits.                   |
+| What needs attention?    | Failed modifications, observed test failures, and recognized sensitive-file access.                  |
+| Where is the evidence?   | Changed-file links open native **Review · turn N**. Missing native evidence shows an explicit error. |
+| What if the model fails? | Factual cards remain available; AI summaries can also be turned off.                                 |
 
 ## How it works
 
 1. **Collect recorded evidence.** DSH events feed a replayable projection of changes, recognized test results, and direct sensitive-file access. Recorded workspace comparisons can supplement direct edits; uncertain concurrent-agent attribution stays explicit.
 2. **Explain behavior changes.** At turn checkpoints, an optional model receives bounded, redacted change excerpts and task context. Accepted change-based summaries must reference supplied change IDs. Reference validation does not prove every narrative claim is correct.
 3. **Keep verification independent.** Test counts and verification labels come from observed execution evidence, not AI text. A successful exit alone does not establish passing tests; later edits can make earlier results stale.
-4. **Keep evidence available.** Missing models, rejected summaries, and provider failures leave factual cards intact. Clicking a changed file opens its recorded native Review rather than comparing against today's files.
+4. **Keep evidence available.** Missing models, rejected summaries, and provider failures leave factual cards intact. Clicking a changed file opens its recorded native Review. The plugin does not provide a substitute custom diff viewer; missing native Review evidence shows an explicit error.
 
-The implementation separates evidence projection ([engine.js](engine.js)), summary scheduling ([coordinator.js](coordinator.js)), and the sidebar ([client.js](client.js)). See the [development guide](docs/DEVELOPMENT.md) for the full module map.
+The implementation separates evidence projection ([src/engine.js](src/engine.js)), summary scheduling ([src/coordinator.js](src/coordinator.js)), and the sidebar ([src/client.js](src/client.js)). See the [development guide](docs/DEVELOPMENT.md) for the full module map.
+
+### Test history and delegated agents
+
+Each card keeps observed test runs in a collapsible disclosure, newest first, titled by their runner command rather than an opaque execution ID, with parsed passed/failed/skipped counts when available. Run history starts collapsed by default and expands on demand. Command completion, assertion results, and verification of changed files are separate: an exit code of zero alone is not a parsed test pass. Assignment-linked delegated runs roll up into the owning parent outcome, not whichever parent card is newest, and never certify the parent's changes. Without exact assignment evidence, the observed parent/child session relationship and timestamps place child outcomes under the nearest parent outcome card as explicitly inferred work; cards with no visible parent outcome or no usable timestamp retain the qualified session-level fallback.
+
+Delegated task subcards are grouped into one collapsed **Subtasks** disclosure inside their owning outcome card, between Test runs and Changes. Exact assignment evidence keeps each child turn under its exact parent task. When that evidence is unavailable, the child session's cards appear inside the nearest parent outcome card's Subtasks group, keeping one shared indent while only the group collapses. Delegation receipts already represented by a visible child card are not repeated as empty follow-up rows. When a reused child has follow-up assignments on later parent cards, its later outcomes move with those assignments instead of staying anchored to its first card. A delivered follow-up with no matched child outcome is labeled as awaiting child evidence rather than historical. Parent cards that only have delegated file labels resolve those labels to the matching child card's Review entry. A card with changes but no parsed test run shows an explicit `Test runs (0)` gap. Lint, typecheck, format/check, `tsc --noEmit`, and `node --check` invocations appear in a separate collapsed **Checks** section and never count as tests. All direct subtask cards share the same subtle left indent and render without their own collapse control; only the outer Subtasks group collapses. Historical delegations that cannot be linked to exact child evidence and cannot be placed from observed timestamps are collapsed into one labeled group instead of empty expandable cards. A spawn without inbox identities still owns its deterministic first child turn. Reusing a child agent for a later parent task creates a separate assignment there. Pure orchestrators summarize their linked children's results, with parent/child reports explicitly unverified. Individual subtask cards stay expanded inside the collapsed Subtasks group. Further delegation nests logically while visual indentation stays bounded and deeper tasks show breadcrumbs.
+
+Ownership uses accepted delegation calls, live message receipts, and exact child input IDs. Older relays can be matched by unique exact-content digests without retaining prompts; repeated identical or overlapping deliveries are labeled unavailable/shared rather than guessed from agent identity or timestamps. No raw delivery prompts enter plugin storage or browser projections. **View output** opens a captured, redacted `.out`-named artifact in the sidebar, including stdout and stderr, without requiring shell redirection or creating files in your project. No AI is used to interpret test output.
+
+Direct Node test, Jest/Vitest, pytest, .NET `dotnet test`, Maven `test`/`verify`, and Gradle `test` invocations are recognized. Common Node/Python, .NET and Maven console summaries are parsed deterministically. A Gradle build-success message alone is not a parsed test result. Test and check commands at the end of a top-level `&&` chain, and as the first pipeline component before a pipe or `2>&1` redirection, are recognized. Piped runs are recorded so they do not appear as `Test runs (0)`, but a piped result never certifies changed files. Direct check commands (`npm run check`/`lint`/`typecheck`/`format:check`, `prettier --check`, `tsc --noEmit`, `eslint`, `node --check`) and delegated check rollups are recognized; custom wrappers, other compound shell forms, and automatic discovery of XML report files are not supported yet.
+
+Captures are bounded to 500,000 characters per run and 200 records / 10,000,000 output characters overall. Older captures may be evicted. Truncated, lost, interrupted, and unavailable output is labeled explicitly; output predating capture cannot be recovered automatically. Background capture requires the host jobs service and uses an independent, non-consuming output cursor. A capture restored without its live producer is marked interrupted rather than left running indefinitely.
 
 ## Quick start
 
@@ -83,7 +95,7 @@ Model effort, path rules, agent tools, update/uninstall instructions, and runtim
 ## Privacy and limits
 
 - **AI summaries send code excerpts to your selected provider.** Inputs are bounded and redacted, not metadata-only. Choose **Off** if those excerpts must not leave your machine.
-- Plugin storage includes sanitized metadata, validated narratives, and bounded, redacted whole-file snapshots captured from successful authorized edit/write results. Sensitive paths are excluded; no extra filesystem reads are made for snapshot capture.
+- Plugin storage includes sanitized metadata, validated narratives, bounded redacted test-output artifacts, and bounded, redacted whole-file snapshots captured from successful authorized edit/write results. Sensitive paths are excluded; no extra filesystem reads are made for snapshot capture.
 - Secret filtering is **best-effort**, not a guarantee. Native Review is DSH's own viewer and may show unredacted source under DSH's normal access rules.
 - This is an **activity feed, not a security audit or enforcement system**. Shell reads, MCP operations, nested PTC dispatches, remote agents, external processes, and background tests do not have complete semantic coverage. An empty feed is not proof that no sensitive access occurred.
 - Test results describe observed commands, not exhaustive coverage or correctness. Historical sessions must be loaded/observed; the feed is not an exhaustive history scan.

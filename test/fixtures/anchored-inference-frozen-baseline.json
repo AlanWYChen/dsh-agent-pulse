@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "algorithm": "sha256",
+  "phase": "RED frozen; assignment-anchored follow-up placement",
+  "redCommand": "node --test client-anchored-inference.acceptance.test.js",
+  "redResult": "exit 1; second and third follow-up cards were placed under the child session's first parent card, leaving later pending rows uncovered",
+  "existingRegressionCommand": "node --test client.test.js client-test-tree.acceptance.test.js client-assignment-subtasks.acceptance.test.js client-unattributed-fallback.acceptance.test.js ux-presentation.acceptance.test.js client-inferred-nesting.acceptance.test.js client-inferred-coverage.acceptance.test.js delegation-pending-copy.acceptance.test.js",
+  "existingRegressionResult": "exit 0; 66 passed",
+  "preChangeImplementation": {
+    "client.js": "83955f2041d00e984ef1dbdd5daf5371e2c9df7e78d51288e4af954616c9b281"
+  },
+  "protectedArtifacts": {
+    "client-anchored-inference.acceptance.test.js": "5721d1e990759fc09ed878cb976d4bccc32e21286653d4ebec4413fc8d8d704b",
+    "delegation-pending-copy.acceptance.test.js": "1de17ee1eb84621ec00f862557a6aaa7f4f533d74cd9b3e79bfee161c18ec212",
+    "client-inferred-coverage.acceptance.test.js": "445216b927a83d067a24195360ec4bbe563b80eec22042c05484e79e7f11f25b",
+    "client-inferred-nesting.acceptance.test.js": "a8ceb28dacee9c3e9e401ff46d9dceed1db04574242cfde3e538f85479d12bd9",
+    "client.test.js": "6cc54a2fe01335802bafecf2a6a7481398d254db68cb80fed99c041890e47dd8",
+    "client-test-tree.acceptance.test.js": "9834971d24e7f685dafc7e5b367b9e462afcc7dc59c0cda05878ab426ee08ec2",
+    "client-assignment-subtasks.acceptance.test.js": "5d482b634bf12d851326a944a240350649bd4b78c939526df99e2bdf0fafd203",
+    "client-unattributed-fallback.acceptance.test.js": "babfd00d1a951aaf6a035cf6f821e0ec36efa7cc95aa38054415cecf689fd76b",
+    "ux-presentation.acceptance.test.js": "a9747aaea6801e2848f495dc142c71adef715594268b9b0794e58aa376399e0e",
+    "scripts/run-tests.mjs": "8417abe6819c7bc66deb24708a302158d26f7e599a2a8b57f239350057e4a2a4"
+  }
+}

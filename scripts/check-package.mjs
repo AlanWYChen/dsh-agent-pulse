@@ -76,7 +76,9 @@ npm([
   tarball,
 ]);
 const installed = join(consumer, 'node_modules', ...manifest.name.split('/'));
-const plugin = await import(pathToFileURL(join(installed, 'index.js')).href);
+const plugin = await import(
+  pathToFileURL(join(installed, 'src', 'index.js')).href
+);
 assert.equal(typeof plugin.apply, 'function');
 assert.equal(plugin.Config.parse({}).maxCards, 100);
 assert.deepEqual(plugin.Config.parse({}), {

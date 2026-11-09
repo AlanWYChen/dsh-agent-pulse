@@ -1,6 +1,7 @@
 import { readdirSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const integration = new Set([
@@ -14,7 +15,8 @@ const group = process.argv[2] ?? 'all';
 if (!['all', 'unit', 'integration'].includes(group)) {
   throw new Error(`Unknown test group: ${group}`);
 }
-const files = readdirSync(root)
+const testDir = join(root, 'test');
+const files = readdirSync(testDir)
   .filter((file) => file.endsWith('.test.js'))
   .filter(
     (file) =>
@@ -23,9 +25,13 @@ const files = readdirSync(root)
   .sort();
 if (!files.length) throw new Error(`No tests found for ${group}`);
 console.log(`Running ${group} tests (${files.length} files).`);
-const result = spawnSync(process.execPath, ['--test', ...files], {
-  cwd: root,
-  stdio: 'inherit',
-});
+const result = spawnSync(
+  process.execPath,
+  ['--test', ...files.map((file) => join('test', file))],
+  {
+    cwd: root,
+    stdio: 'inherit',
+  },
+);
 if (result.error) throw result.error;
 process.exit(result.status ?? 1);

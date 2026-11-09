@@ -173,7 +173,7 @@ async function main() {
     '@deepseek-ai/dsh-session-projection',
   );
   const { initState, reduceEvent, viewState, PROJECTION_KEY } = await import(
-    pathToFileURL(resolve(root, 'engine.js')).href
+    pathToFileURL(resolve(root, 'src', 'engine.js')).href
   );
   const { z } = await import(
     pathToFileURL(createRequire(resolve(root, 'package.json')).resolve('zod'))
