@@ -35,7 +35,7 @@
     "check": "node --check src/index.js && node --check src/engine.js && node --check src/coordinator.js && node --check src/change-context.js && node --check src/syntax-highlight.js && node --check src/unified-diff.js && node --check src/full-file-context.js && node --check src/recorded-files.js && node --check src/model-settings.js && node --check src/workspace.js && node --check src/client.js"
   },
   "dependencies": {
-    "@shikijs/core": "^4.5.0",
+    "@shikijs/core": "^4.6.0",
     "@shikijs/engine-javascript": "^4.5.0",
     "@shikijs/langs": "^4.5.0",
     "@shikijs/themes": "^4.5.0",
