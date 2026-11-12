@@ -95,7 +95,14 @@ test('outputDir persists a real 0600 .out file with redacted command, metadata, 
     assert.match(content, /runner says something novel/);
     assert.match(content, /diagnostic/);
     assert.match(content, /stderr/i);
-    assert.equal((await stat(artifact.path)).mode & 0o777, 0o600);
+    const mode = (await stat(artifact.path)).mode & 0o777;
+    if (process.platform === 'win32') {
+      // Windows synthesizes permission bits and cannot represent POSIX 0o600;
+      // the file must at least remain writable (not read-only).
+      assert.equal(mode & 0o200, 0o200, 'artifact must be writable on Windows');
+    } else {
+      assert.equal(mode, 0o600);
+    }
 
     const emptyContent = await readFile(empty.path, 'utf8');
     assert.match(emptyContent, /plain output/);
